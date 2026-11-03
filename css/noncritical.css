@@ -5,3 +5,24 @@ body.dark-mode :where(a,button,input,select,textarea,summary,[tabindex]):focus-v
 @media (prefers-reduced-motion:reduce){
   *,*::before,*::after{animation-duration:.01ms!important;animation-iteration-count:1!important;transition-duration:.01ms!important;scroll-behavior:auto!important}
 }
+/* ===== Submenú Concursos en 2 columnas (fc-mega) ===== */
+.fc-mega-panel .fc-mega-col>a,.fc-mega-panel .fc-mega-pie>a{display:block;padding:9px 16px;font-size:12px;font-weight:600;line-height:20px;text-transform:uppercase;white-space:nowrap;color:#fff}
+.fc-mega-panel .dropdown-header{display:block;padding:10px 16px 4px;border-bottom:1px solid #666;margin-bottom:4px}
+.fc-mega-chips{display:flex;align-items:center;gap:6px;padding:8px 16px;font-size:12px;font-weight:600;text-transform:uppercase;color:#fff}
+.navbar .fc-mega-panel .fc-mega-chips a{padding:2px 9px;border:1px solid #777;border-radius:99px;text-transform:none;font-weight:600;color:#fff}
+.navbar .fc-mega-panel .fc-mega-chips a:hover{border-color:#fbcd12;color:#fbcd12}
+.fc-mega-pie{display:flex;flex-wrap:wrap;border-top:1px solid #666;margin-top:4px}
+.fc-mega-pie>a{flex:1 1 auto;text-align:center}
+.navbar .fc-mega-panel .fc-mega-pie>a.fc-mega-cta{color:#fbcd12!important}
+.fc-mega-panel a:hover{color:#fbcd12!important;background:transparent!important}
+@media (min-width:980px){
+  .navbar .fc-mega>.fc-mega-panel{width:470px;max-height:calc(100vh - 70px);overflow-y:auto;overscroll-behavior:contain}
+  .fc-mega-cols{display:grid;grid-template-columns:1fr 1fr}
+  .fc-mega-col+.fc-mega-col{border-left:1px solid #555}
+}
+@media (max-width:979px){
+  .navbar .fc-mega-panel .fc-mega-col>a,.navbar .fc-mega-panel .fc-mega-pie>a{padding:12px 15px}
+  .fc-mega-chips{padding:12px 15px}
+  .fc-mega-pie{flex-direction:column}
+  .fc-mega-pie>a{text-align:left}
+}
