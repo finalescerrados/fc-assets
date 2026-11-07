@@ -1,0 +1,1323 @@
+/*! finalescerrados.com · fc-listados.js · fc-assets v10.17 · JS de los listados que antes generaba inline ConcursosPost.py (2026-11-07).
+   Cada sentencia ejecutable va en su propio try/catch: si un bloque falla, los demás siguen corriendo. */
+
+/* ── bloque 1/5 · ocultar/mostrar detalles (fxHide) ── */
+function fxHide(el) {
+  var id = el.getAttribute('data-id');
+  var cont = document.getElementById(id);
+  if (!cont) return;
+
+  var details = cont.querySelector('.details');
+  if (!details) return;
+
+  var title = document.getElementById('bases_' + id);
+
+  var key = 'hide_details_' + id;
+  var hidden = localStorage.getItem(key) === '1';
+
+  if (hidden) {
+    // Mostrar detalles
+    details.style.display = '';
+    localStorage.setItem(key, '0');
+    el.title = 'Ocultar detalles';
+    el.querySelector('i').style.transform = 'rotate(0deg)';
+    if (title) title.style.textDecoration = '';
+    mostrarToast('Detalles visibles','info');
+  } else {
+    // Ocultar detalles
+    details.style.display = 'none';
+    localStorage.setItem(key, '1');
+    el.title = 'Mostrar detalles';
+    el.querySelector('i').style.transform = 'rotate(45deg)';
+    if (title) title.style.textDecoration = 'line-through';
+    mostrarToast('Detalles ocultos','info');
+  }
+}
+
+// Restaurar al cargar
+try {
+document.addEventListener('DOMContentLoaded', function () {
+  document.querySelectorAll('button.btn-toggle').forEach(function(el) {
+    var id = el.getAttribute('data-id');
+    var cont = document.getElementById(id);
+    if (!cont) return;
+
+    var details = cont.querySelector('.details');
+    if (!details) return;
+
+    var title = document.getElementById('bases_' + id);
+
+    if (localStorage.getItem('hide_details_' + id) === '1') {
+      details.style.display = 'none';
+      el.title = 'Mostrar detalles';
+      el.querySelector('i').style.transform = 'rotate(45deg)';
+      if (title) title.style.textDecoration = 'line-through';
+    } else {
+      el.title = 'Ocultar detalles';
+      el.querySelector('i').style.transform = 'rotate(0deg)';
+    }
+  });
+});
+} catch (e) { console.error('[fc-listados.js bloque 1]', e); }
+
+/* ── bloque 2/5 · favoritos / ya participé (fxFav) ── */
+function fxFav(el) {
+  var id = el.getAttribute('data-id');
+  var icon = el.querySelector('i');
+  var key = 'fav_' + id;
+
+  var estado = parseInt(localStorage.getItem(key) || '0', 10);
+  if (estado === 2 && !fcConfirmarQuitarRes(id)) return;   // tiene resultado anotado: pedir confirmación
+  if (estado === 2) fcLimpiarRes(id);
+  var antes = estado;
+  estado = (estado + 1) % 3;
+
+  localStorage.setItem(key, estado);
+  if (typeof fcMeGusta === 'function') fcMeGusta(id, antes, estado, el);   // contador de "me gusta" (tema)
+  
+    // guardar fecha de cierre si existe
+    var recuadro = document.getElementById(id);
+    if (recuadro) {
+      var fechaEl = recuadro.querySelector('.link-agendar');
+      if (fechaEl && fechaEl.dataset.fecha) {
+        var f = fechaEl.dataset.fecha.split('/');
+        if (f.length === 3) {
+          var fechaISO = f[2] + '-' + f[1] + '-' + f[0];
+          localStorage.setItem('fav_fecha_' + id, fechaISO);
+        }
+      }
+    }
+  
+  aplicarEstado(icon, estado);
+
+  if (estado === 0) mostrarToast('Concurso desmarcado','warning');
+  if (estado === 1) mostrarToast('Concurso guardado en favoritos, presione nuevamente si ya participó','success','/p/mis-concursos-favoritos.html#lista-favoritos');
+  if (estado === 2) mostrarToast('Concurso guardado en "ya participé", presione nuevamente para desmarcar','success','/p/mis-concursos-favoritos.html#lista-participados');
+
+  idle(actualizarCookie, 500);
+}
+
+// Resultado anotado en "ya participé" (claves fcres_/fcfallo_/fctxt_, ver Mis favoritos)
+// Respaldo en la cookie respaldoRes ("id:r:AAAAMMDD,..."), por si el navegador vació localStorage
+function fcResCookie(id) {
+  var row = document.cookie.split('; ').find(function (r) { return r.indexOf('respaldoRes=') === 0; });
+  var out = null;
+  if (row) row.slice('respaldoRes='.length).split(',').forEach(function (x) {
+    var p = x.split(':');
+    if (p[0] === String(id)) out = { r: p[1] || '', l: p[2] || '' };
+  });
+  return out;
+}
+function fcTieneRes(id) {
+  try { if (localStorage.getItem('fcres_' + id) || localStorage.getItem('fcfallo_' + id) || localStorage.getItem('fctxt_' + id)) return true; } catch (e) {}
+  var c = fcResCookie(id);
+  return !!(c ? (c.r || c.l) : false);
+}
+function fcResNombre(id) {
+  var r = null; try { r = localStorage.getItem('fcres_' + id); } catch (e) {}
+  if (!r) { var c = fcResCookie(id); if (c) r = c.r; }
+  return { g: 'Ganador', f: 'Finalista', m: 'Mención', s: 'Sin premio' }[r] || '';
+}
+// true si se puede sacar el concurso de "ya participé" (no tiene nada anotado o el usuario lo confirma)
+function fcConfirmarQuitarRes(id) {
+  if (!fcTieneRes(id)) return true;
+  var n = fcResNombre(id);
+  return window.confirm('Este concurso tiene tu resultado anotado' + (n ? ' (' + n + ')' : '') + '. ¿Quitarlo de "ya participé"? Se borran el resultado, el texto y la fecha de fallo.');
+}
+// Borra el resultado de un concurso (localStorage y cookie de respaldo respaldoRes)
+function fcLimpiarRes(id) {
+  try { ['fcres_', 'fcfallo_', 'fctxt_'].forEach(function (p) { localStorage.removeItem(p + id); }); } catch (e) {}
+  var row = document.cookie.split('; ').find(function (r) { return r.indexOf('respaldoRes=') === 0; });
+  if (!row) return;
+  var v = row.slice('respaldoRes='.length).split(',').filter(function (x) { return x && x.split(':')[0] !== String(id); }).join(',');
+  document.cookie = 'respaldoRes=' + v + '; path=/; max-age=31536000; SameSite=Lax' + (location.protocol === 'https:' ? '; Secure' : '');
+}
+
+function aplicarEstado(icon, estado) {
+  icon.className = '';
+  if (estado === 0) icon.className = 'fa-brands fa-gratipay';
+  if (estado === 1) icon.className = 'fa-brands fa-gratipay fav-guardado';
+  if (estado === 2) icon.className = 'fa-solid fa-circle-check fav-participado';
+}
+
+// Cookie de respaldo compacta (v2): "2_<favs>_<participados>_<id:AAAAMMDD,...>"
+// ~30 bytes por favorito (el formato JSON anterior ocupaba ~76). Sigue leyendo el formato anterior.
+var FC_COOKIE_MAX = 3900;
+
+// Función para leer cookie de respaldo
+function leerRespaldoCookie() {
+  var row = document.cookie.split('; ').find(function(r) { return r.indexOf('respaldoFavs=') === 0; });
+  if (!row) return null;
+  var raw = row.slice('respaldoFavs='.length);
+  try {
+    if (raw.charAt(0) === '2' && raw.charAt(1) === '_') {
+      var p = raw.split('_'), out = { favs:{}, participados:{}, fechas:{} };
+      (p[1] || '').split('.').forEach(function(id) { if (id) out.favs[id] = true; });
+      (p[2] || '').split('.').forEach(function(id) { if (id) out.participados[id] = true; });
+      (p[3] || '').split(',').forEach(function(kv) {
+        var i = kv.indexOf(':');
+        if (i > 0) {
+          var d = kv.slice(i + 1);
+          out.fechas[kv.slice(0, i)] = /^[0-9]{8}$/.test(d) ? d.slice(0,4) + '-' + d.slice(4,6) + '-' + d.slice(6) : d;
+        }
+      });
+      return out;
+    }
+    return JSON.parse(decodeURIComponent(raw)); // formato anterior
+  } catch(e) { return null; }
+}
+
+// Función para sincronizar cookie con localStorage
+function actualizarCookie() {
+  var favs = [], parts = [], fechas = [];
+  try {
+    for (var i = 0; i < localStorage.length; i++) {
+      var k = localStorage.key(i);
+      if (k.indexOf('fav_fecha_') === 0) {
+        fechas.push(k.slice(10) + ':' + String(localStorage.getItem(k)).replace(/-/g, ''));
+      } else if (k.indexOf('fav_') === 0) {
+        var e = parseInt(localStorage.getItem(k), 10), id = k.slice(4);
+        if (e === 1) favs.push(id); else if (e === 2) parts.push(id);
+      }
+    }
+  } catch(e) { return; }
+  var base = '2_' + favs.join('.') + '_' + parts.join('.') + '_';
+  if (base.length > FC_COOKIE_MAX) return; // no pisar la cookie con algo truncado
+  // Las fechas se agregan mientras entren: primero las vigentes, más próximas primero
+  var t = new Date(), pad = function(n) { return String(n).padStart(2, '0'); };
+  var hoy = '' + t.getFullYear() + pad(t.getMonth() + 1) + pad(t.getDate());
+  var fe = function(x) { return x.split(':')[1]; };
+  fechas.sort(function(a, b) { return fe(a) < fe(b) ? -1 : (fe(a) > fe(b) ? 1 : 0); });
+  var vivas = fechas.filter(function(x) { return fe(x) >= hoy; });
+  var vencidas = fechas.filter(function(x) { return fe(x) < hoy; });
+  var v = base, usados = 0;
+  vivas.concat(vencidas).some(function(x) {
+    var add = (usados ? ',' : '') + x;
+    if ((v + add).length > FC_COOKIE_MAX) return true;
+    v += add; usados++; return false;
+  });
+  document.cookie = 'respaldoFavs=' + v + '; path=/; max-age=31536000; SameSite=Lax'
+    + (location.protocol === 'https:' ? '; Secure' : '');
+}
+
+// Restauración al cargar la página
+try {
+document.addEventListener('DOMContentLoaded', function() {
+  var respaldo = leerRespaldoCookie();
+
+  if (respaldo) {
+    // Restaurar favoritos
+    for (var id in respaldo.favs) {
+      var key = 'fav_' + id;
+      if (!localStorage.getItem(key)) localStorage.setItem(key, 1);
+    }
+    // Restaurar participados
+    for (var id in respaldo.participados) {
+      var key = 'fav_' + id;
+      if (!localStorage.getItem(key)) localStorage.setItem(key, 2);
+    }
+  }
+  
+    // 🔵 Restaurar fechas si existen en cookie
+    if (respaldo && respaldo.fechas) {
+      for (var id in respaldo.fechas) {
+        var k = 'fav_fecha_' + id;
+        if (!localStorage.getItem(k)) {
+          localStorage.setItem(k, respaldo.fechas[id]);
+        }
+      }
+    }
+
+  // Aplicar estado a todos los íconos existentes
+  document.querySelectorAll('button.btn-fav').forEach(function(el) {
+    var id = el.getAttribute('data-id');
+    var estado = parseInt(localStorage.getItem('fav_' + id) || '0', 10);
+    aplicarEstado(el.querySelector('i'), estado);
+  });
+});
+} catch (e) { console.error('[fc-listados.js bloque 2]', e); }
+
+/* ── bloque 3/5 · agendar (addToCalendarUniversal) ── */
+function addToCalendarUniversal(link, ev) {
+    if (ev) { ev.preventDefault(); ev.stopPropagation(); }
+    var f = (link.dataset.fecha || '').split('/'); // dd/mm/yyyy
+    if (f.length !== 3) return;
+    var d = new Date(Date.UTC(+f[2], +f[1] - 1, +f[0]));
+    if (isNaN(d) || d.getUTCDate() !== +f[0]) return; // rechaza fechas inexistentes (31/02)
+    var anchor = (ev && ev.currentTarget && ev.currentTarget !== link) ? ev.currentTarget : link;
+    var app = null;
+    try { app = localStorage.getItem('fc_agendar_app'); } catch (e) {}
+    if (app && fcAgApps()[app]) { fcAgEjecutar(app, link); fcAgToast(app, link, anchor); }
+    else fcAgMenu(link, anchor);
+}
+
+function fcAgNombreCorto(app) {
+    return { google: 'Google Calendar', apple: 'Apple Calendar', outlook: 'Outlook.com', o365: 'Outlook', ics: '.ics' }[app] || app;
+}
+
+function fcAgApps() {
+    return {
+        google: 'Google Calendar',
+        apple: 'Apple Calendar (iPhone, Mac)',
+        outlook: 'Outlook.com',
+        o365: 'Outlook (trabajo / Microsoft 365)',
+        ics: 'Descargar archivo .ics'
+    };
+}
+
+function fcAgDatos(link) {
+    var f = link.dataset.fecha.split('/');
+    var d = new Date(Date.UTC(+f[2], +f[1] - 1, +f[0]));
+    var next = new Date(d.getTime() + 86400000);   // fin exclusivo en eventos de dia completo
+    var pad = function (n) { return String(n).padStart(2, '0'); };
+    var nombre = link.dataset.nombre || 'Concurso literario';
+    var url = link.dataset.url || location.href;
+    return {
+        d: d, next: next, pad: pad, nombre: nombre, url: url,
+        ymd: function (x) { return x.getUTCFullYear() + pad(x.getUTCMonth() + 1) + pad(x.getUTCDate()); },
+        iso: function (x) { return x.getUTCFullYear() + '-' + pad(x.getUTCMonth() + 1) + '-' + pad(x.getUTCDate()); },
+        detalle: 'Cierra el ' + pad(+f[0]) + '/' + pad(+f[1]) + '/' + f[2] + '. Bases, premio y requisitos: ' + url
+    };
+}
+
+function fcAgEjecutar(app, link) {
+    var x = fcAgDatos(link);
+    if (app === 'google') {
+        window.open('https://calendar.google.com/calendar/render?action=TEMPLATE'
+            + '&text=' + encodeURIComponent(x.nombre)
+            + '&dates=' + x.ymd(x.d) + '/' + x.ymd(x.next)
+            + '&details=' + encodeURIComponent(x.detalle), '_blank', 'noopener');
+        return;
+    }
+    if (app === 'outlook' || app === 'o365') {
+        var base = app === 'outlook' ? 'https://outlook.live.com' : 'https://outlook.office.com';
+        window.open(base + '/calendar/0/deeplink/compose?path=%2Fcalendar%2Faction%2Fcompose&rru=addevent&allday=true'
+            + '&subject=' + encodeURIComponent(x.nombre)
+            + '&startdt=' + x.iso(x.d) + '&enddt=' + x.iso(x.next)
+            + '&body=' + encodeURIComponent(x.detalle), '_blank', 'noopener');
+        return;
+    }
+    // apple / ics: archivo .ics con avisos 7 dias y 1 dia antes
+    var esc = function (t) { return String(t).replace(/\\/g, '\\\\').replace(/;/g, '\\;').replace(/,/g, '\\,').replace(/\r?\n/g, '\\n'); };
+    var fold = function (line) {                    // RFC 5545: max. 75 octetos por linea
+        var enc = new TextEncoder(), out = [], cur = '', len = 0;
+        for (var ch of line) {
+            var b = enc.encode(ch).length;
+            if (len + b > (out.length ? 74 : 75)) { out.push(cur); cur = ch; len = b; } else { cur += ch; len += b; }
+        }
+        out.push(cur);
+        return out.join('\r\n ');
+    };
+    var slug = String(x.nombre).normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase()
+        .replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '').slice(0, 60) || 'concurso';
+    var now = new Date();
+    var stamp = x.ymd(now) + 'T' + x.pad(now.getUTCHours()) + x.pad(now.getUTCMinutes()) + x.pad(now.getUTCSeconds()) + 'Z';
+    var lines = ['BEGIN:VCALENDAR', 'VERSION:2.0', 'PRODID:-//Finales Cerrados//Concursos//ES', 'CALSCALE:GREGORIAN', 'METHOD:PUBLISH',
+        'BEGIN:VEVENT',
+        'UID:' + slug + '-' + x.ymd(x.d) + '@finalescerrados.com',
+        'DTSTAMP:' + stamp,
+        'DTSTART;VALUE=DATE:' + x.ymd(x.d),
+        'DTEND;VALUE=DATE:' + x.ymd(x.next),
+        'SUMMARY:' + esc(x.nombre),
+        'DESCRIPTION:' + esc(x.detalle),
+        'URL:' + x.url,
+        'TRANSP:TRANSPARENT'];
+    [[7, 'Faltan 7 d\u00edas'], [1, 'Falta 1 d\u00eda']].forEach(function (a) {
+        lines.push('BEGIN:VALARM', 'ACTION:DISPLAY', 'DESCRIPTION:' + esc(a[1] + ': ' + x.nombre + '. Revis\u00e1 las bases.'),
+            'TRIGGER:-P' + a[0] + 'D', 'END:VALARM');
+    });
+    lines.push('END:VEVENT', 'END:VCALENDAR');
+    var blob = new Blob([lines.map(fold).join('\r\n') + '\r\n'], { type: 'text/calendar;charset=utf-8' });
+    var a = document.createElement('a');
+    a.href = URL.createObjectURL(blob);
+    a.download = 'cierre-' + slug + '.ics';
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    setTimeout(function () { URL.revokeObjectURL(a.href); }, 1000);
+}
+
+function fcAgEstilos() {
+    if (document.getElementById('fc-ag-css')) return;
+    var st = document.createElement('style');
+    st.id = 'fc-ag-css';
+    st.textContent =
+        '.fc-ag-menu{position:absolute;z-index:99999;background:#fff;border:1px solid #ddd;border-radius:12px;box-shadow:0 8px 28px rgba(0,0,0,.2);padding:6px;width:270px;max-width:calc(100vw - 16px);font-size:15px;line-height:1.3;text-align:left}'
+        + '.fc-ag-menu .fc-ag-t{font-weight:700;padding:8px 10px 6px;color:#333}'
+        + 'body .fc-ag-menu button.fc-ag-op{display:block!important;width:100%!important;text-align:left!important;background:none!important;border:0!important;padding:10px!important;margin:0!important;border-radius:8px!important;cursor:pointer;font:inherit!important;color:#222!important;text-transform:none!important;box-shadow:none!important}'
+        + 'body .fc-ag-menu button.fc-ag-op:hover,body .fc-ag-menu button.fc-ag-op:focus{background:#eef3f7!important;outline:none}'
+        + '.fc-ag-menu label{display:flex;gap:8px;align-items:center;padding:8px 10px 6px;font-size:13px;color:#555;border-top:1px solid #eee;margin-top:4px;cursor:pointer}'
+        + '.fc-ag-toast{position:fixed;left:50%;bottom:20px;transform:translateX(-50%);background:#333;color:#fff;padding:10px 14px;border-radius:10px;z-index:99999;font-size:14px;display:flex;gap:12px;align-items:center;box-shadow:0 6px 20px rgba(0,0,0,.25);max-width:calc(100vw - 24px)}'
+        + 'body .fc-ag-toast button{background:none!important;border:1px solid #999!important;color:#fff!important;border-radius:6px!important;padding:3px 10px!important;cursor:pointer;font:inherit!important}'
+        + 'body.dark-mode .fc-ag-menu{background:#1f1f1f!important;border-color:#3a3a3a!important}'
+        + 'body.dark-mode .fc-ag-menu .fc-ag-t,body.dark-mode .fc-ag-menu button.fc-ag-op{color:#e0e0e0!important}'
+        + 'body.dark-mode .fc-ag-menu button.fc-ag-op:hover,body.dark-mode .fc-ag-menu button.fc-ag-op:focus{background:#2c3a46!important}'
+        + 'body.dark-mode .fc-ag-menu label{color:#bbb!important;border-color:#333!important}'
+        + '@media (max-width:600px){.fc-ag-menu{position:fixed!important;left:8px!important;right:8px!important;bottom:8px!important;top:auto!important;width:auto!important;max-width:none!important}}';
+    document.head.appendChild(st);
+}
+
+function fcAgCerrar() {
+    var m = document.getElementById('fc-ag-menu');
+    if (m) m.remove();
+    document.removeEventListener('click', fcAgFuera, true);
+    document.removeEventListener('keydown', fcAgTecla, true);
+}
+function fcAgFuera(e) { var m = document.getElementById('fc-ag-menu'); if (m && !m.contains(e.target)) fcAgCerrar(); }
+function fcAgTecla(e) { if (e.key === 'Escape') fcAgCerrar(); }
+
+function fcAgMenu(link, anchor) {
+    fcAgEstilos();
+    fcAgCerrar();
+    var apps = fcAgApps();
+    var m = document.createElement('div');
+    m.id = 'fc-ag-menu';
+    m.className = 'fc-ag-menu';
+    m.setAttribute('role', 'menu');
+    var t = document.createElement('div');
+    t.className = 'fc-ag-t';
+    t.textContent = 'Agendar el cierre en\u2026';
+    m.appendChild(t);
+    var lbl = document.createElement('label');
+    var chk = document.createElement('input');
+    chk.type = 'checkbox';
+    chk.checked = true;
+    lbl.appendChild(chk);
+    lbl.appendChild(document.createTextNode('Recordar mi elecci\u00f3n'));
+    Object.keys(apps).forEach(function (k) {
+        var b = document.createElement('button');
+        b.type = 'button';
+        b.className = 'fc-ag-op';
+        b.setAttribute('role', 'menuitem');
+        b.textContent = apps[k];
+        b.addEventListener('click', function (e) {
+            e.stopPropagation();
+            if (chk.checked) { try { localStorage.setItem('fc_agendar_app', k); } catch (er) {} }
+            fcAgCerrar();
+            fcAgEjecutar(k, link);
+        });
+        m.appendChild(b);
+    });
+    m.appendChild(lbl);
+    document.body.appendChild(m);
+    var r = anchor.getBoundingClientRect();
+    var left = Math.min(window.scrollX + r.left, window.scrollX + document.documentElement.clientWidth - m.offsetWidth - 8);
+    m.style.left = Math.max(window.scrollX + 8, left) + 'px';
+    m.style.top = (window.scrollY + r.bottom + 6) + 'px';
+    var primero = m.querySelector('button.fc-ag-op');
+    if (primero) primero.focus({ preventScroll: true });
+    setTimeout(function () {
+        document.addEventListener('click', fcAgFuera, true);
+        document.addEventListener('keydown', fcAgTecla, true);
+    }, 0);
+}
+
+function fcAgToast(app, link, anchor) {
+    fcAgEstilos();
+    var viejo = document.getElementById('fc-ag-toast');
+    if (viejo) viejo.remove();
+    var t = document.createElement('div');
+    t.id = 'fc-ag-toast';
+    t.className = 'fc-ag-toast';
+    t.setAttribute('role', 'status');
+    var s = document.createElement('span');
+    s.textContent = app === 'ics' ? 'Archivo .ics descargado' : 'Agendando en ' + fcAgNombreCorto(app);
+    var b = document.createElement('button');
+    b.type = 'button';
+    b.textContent = 'Cambiar';
+    b.addEventListener('click', function (e) {
+        e.stopPropagation();
+        try { localStorage.removeItem('fc_agendar_app'); } catch (er) {}
+        t.remove();
+        fcAgMenu(link, anchor);
+    });
+    t.appendChild(s);
+    t.appendChild(b);
+    document.body.appendChild(t);
+    setTimeout(function () { if (t.parentNode) t.remove(); }, 6000);
+}
+
+/* ── bloque 4/5 · panel de filtros: estado, facetas, URL ── */
+try {
+(function() {
+
+/* ─── ESTADO ─── */
+var FC_KEY = 'fc_filtros2:' + window.location.pathname;
+try { localStorage.removeItem('fc_filtros:' + window.location.pathname); } catch(e) {}
+
+var fcState = {
+  generos:      new Set(),
+  premios:      new Set(),
+  paises:       new Set(),
+  edades:       new Set(),
+  residencias:  new Set(),
+  envios:       new Set(),
+  dateFrom:     '',
+  dateTo:       '',
+  soloAbiertos: false,
+  miPais:       false,
+  texto:        '',
+  orden:        'cierre'
+};
+var fcPanelOpen  = false;
+var fcGroupsOpen = { fecha: false, genero: false, premio: false, pais: false, participacion: false, envio: false };
+var fcData = [];
+var fcListaParent = null;   // contenedor original de las tarjetas (con las cabeceras de mes)
+var fcPalabras = [];        // búsqueda por texto ya normalizada
+var fcMiPais = '';   // país del visitante, en el mismo formato que los chips de residencia
+
+/* Código ISO (Cloudflare) -> nombre como figura en las bases */
+var FC_ISO = {
+  AR: 'Argentina', BO: 'Bolivia', CL: 'Chile', CO: 'Colombia', CR: 'Costa Rica', CU: 'Cuba',
+  DO: 'República Dominicana', EC: 'Ecuador', SV: 'El Salvador', GQ: 'Guinea Ecuatorial',
+  GT: 'Guatemala', HN: 'Honduras', MX: 'México', NI: 'Nicaragua', PA: 'Panamá', PY: 'Paraguay',
+  PE: 'Perú', PR: 'Puerto Rico', ES: 'España', UY: 'Uruguay', VE: 'Venezuela',
+  US: 'Estados Unidos', CA: 'Canadá', BR: 'Brasil', PT: 'Portugal', AD: 'Andorra',
+  FR: 'Francia', IT: 'Italia', DE: 'Alemania', GB: 'Reino Unido', CH: 'Suiza', BE: 'Bélgica'
+};
+
+/* Grupos de chips: clave del estado, campo del concurso, contenedor, parámetro del hash */
+var FC_GRUPOS = [
+  { key: 'generos',     campo: 'generos',     el: 'fc-chips-genero',     badge: 'fc-badge-genero',  h: 'g'  },
+  { key: 'paises',      campo: 'pais',        el: 'fc-chips-pais',       badge: 'fc-badge-pais',    h: 'p'  },
+  { key: 'edades',      campo: 'edades',      el: 'fc-chips-edad',       badge: null,               h: 'e'  },
+  { key: 'residencias', campo: 'residencias', el: 'fc-chips-residencia', badge: null,               h: 'r'  },
+  { key: 'premios',     campo: 'premios',     el: 'fc-chips-premio',     badge: 'fc-badge-premio',  h: 'pr' },
+  { key: 'envios',      campo: 'envio',       el: 'fc-chips-envio',      badge: 'fc-badge-envio',   h: 'env' }
+];
+var FC_ENVIO_LABEL = { electronico: 'Electrónico', postal: 'Postal' };
+var FC_EDAD_ORDEN  = ['Mujeres', 'Niños y adolescentes', 'Jóvenes (hasta 35)', 'Adultos', 'Mayores de 50', 'Estudiantes', 'Docentes'];
+
+/* ─── TOGGLE PANEL / GRUPO ─── */
+window.fcTogglePanel = function() {
+  fcPanelOpen = !fcPanelOpen;
+  document.getElementById('fc-filtros-wrap').classList.toggle('open', fcPanelOpen);
+};
+window.fcToggleGroup = function(g) {
+  fcGroupsOpen[g] = !fcGroupsOpen[g];
+  var body = document.getElementById('fc-gbody-' + g);
+  body.closest('.fc-group').classList.toggle('open', fcGroupsOpen[g]);
+};
+
+/* ─── NORMALIZACIÓN ─── */
+var FC_MINUSC = { de: 1, del: 1, la: 1, las: 1, los: 1, el: 1, y: 1, e: 1 };
+function fcTitleCase(s) {
+  return s.trim().toLowerCase().split(' ').map(function(w, i) {
+    if (!w) return w;
+    if (i > 0 && FC_MINUSC[w]) return w;
+    return w.charAt(0).toUpperCase() + w.slice(1);
+  }).join(' ');
+}
+/* Minúsculas sin tildes (los diacríticos se arman sin escribirlos en el código) */
+var FC_DIAC = new RegExp('[' + String.fromCharCode(768) + '-' + String.fromCharCode(879) + ']', 'g');
+function fcNorm(s) { return String(s || '').toLowerCase().normalize('NFD').replace(FC_DIAC, ''); }
+
+function fcAdd(arr, v) { if (v && arr.indexOf(v) === -1) arr.push(v); }
+function fcEsc(s) {
+  return String(s).replace(/[&<>"]/g, function(ch) {
+    return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[ch];
+  });
+}
+
+/* País: alias de subdivisiones y "desconocido" fuera de los chips */
+var FC_PAIS_ALIAS = { 'ciudad de méxico': 'México', 'cdmx': 'México', 'país desconocido': '', 'pais desconocido': '', 'desconocido': '' };
+function fcPais(s) {
+  var k = (s || '').trim().toLowerCase();
+  if (k in FC_PAIS_ALIAS) return FC_PAIS_ALIAS[k];
+  return fcTitleCase(s || '');
+}
+
+/* Premio: nombre de la página-listado (data-fc-cat) -> rótulo corto */
+var FC_PREMIO_CORTO = {
+  'con Compensación Económica':           'Dinero',
+  'que Ofrecen Publicación':              'Publicación',
+  'con Difusión en Prensa':               'Difusión en prensa',
+  'que Otorgan Beca o Residencia':        'Beca, residencia o formación',
+  'que Otorgan Subsidios para Proyectos': 'Subsidio para proyectos',
+  'que Premian con Tecnología':           'Tecnología',
+  'con Premios Canjeables':               'Bonos y vales',
+  'que Premian con Libros':               'Libros',
+  'para Viajar o Participar en Eventos':  'Viajes y eventos',
+  'que Premian con Arte':                 'Obra de arte',
+  'que Otorgan Trofeo, Medalla o Placa':  'Trofeo, medalla o placa',
+  'que Otorgan Diploma':                  'Diploma',
+  'que Premian con Bebida o Alimento':    'Bebida o alimento',
+  'que Premian con Plantas y Flores':     'Plantas y flores'
+};
+function fcPremioCorto(n) {
+  if (FC_PREMIO_CORTO[n]) return FC_PREMIO_CORTO[n];
+  var s = n.replace(/^(con|para|que [^ ]+( con)?) /, '');
+  return s.charAt(0).toUpperCase() + s.slice(1).toLowerCase();
+}
+
+/* Participación: cada categoría marcada por fxMarcarCategoriasPara va a
+   "Dirigidos a" (edad o perfil) o a "Residencia o nacionalidad". */
+function fcRango(lab) {
+  var s = lab.toLowerCase(), m;
+  if ((m = s.match(/^mayores(?: de)? ([0-9]+)$/))) return [+m[1], 120];
+  if ((m = s.match(/^menores(?: de)? ([0-9]+)$/))) return [0, +m[1] - 1];
+  if ((m = s.match(/^(?:entre|de) ([0-9]+) (?:y|a) ([0-9]+)$/))) return [+m[1], +m[2]];
+  var fijos = { 'mayores de edad': [18, 120], 'adultos': [18, 120], 'adultos mayores': [60, 120], 'niños': [0, 12], 'jóvenes': [12, 35] };
+  return fijos[s] || null;
+}
+function fcClasificarPara(lab) {
+  var s = lab.toLowerCase();
+  if (s === 'alumnos')  return { tipo: 'edad', val: 'Estudiantes' };
+  if (s === 'docentes') return { tipo: 'edad', val: 'Docentes' };
+  if (s === 'mujeres')  return { tipo: 'edad', val: 'Mujeres' };
+  var r = fcRango(lab);
+  if (!r) return { tipo: 'res', val: fcPais(lab) };
+  if (r[0] >= 50)  return { tipo: 'edad', val: 'Mayores de 50' };
+  if (r[1] >= 100) return { tipo: 'edad', val: 'Adultos' };
+  if (r[1] <= 20)  return { tipo: 'edad', val: 'Niños y adolescentes' };
+  if (r[1] <= 40)  return { tipo: 'edad', val: 'Jóvenes (hasta 35)' };
+  return { tipo: 'edad', val: 'Adultos' };
+}
+
+/* ─── MONTO DEL PREMIO EN EUROS (solo para ordenar; cotizaciones aproximadas) ─── */
+var FC_EUR = { EUR: 1, USD: 0.9, GBP: 1.15, CHF: 1.05, ARS: 0.0008, MXN: 0.05, COP: 0.00022, CLP: 0.00095,
+               UYU: 0.022, PEN: 0.24, GTQ: 0.115, DOP: 0.015, BOB: 0.13, CUP: 0.003 };
+var FC_PESO_PAIS = { 'Argentina': 'ARS', 'México': 'MXN', 'Colombia': 'COP', 'Chile': 'CLP', 'Uruguay': 'UYU',
+                     'Cuba': 'CUP', 'República Dominicana': 'DOP' };
+var FC_MONEDA_RE = new RegExp('(?<![a-z])(' + String.fromCharCode(8364) + '|£|us[$]|u[$]s|[$]|eur(?:os?)?|usd|d[oó]lar(?:es)?|ars|pesos?|mxn|cop|clp|soles|pen|uyu|gbp|libras?|chf|quetzal(?:es)?|gtq|bob)(?![a-z])', 'g');
+var FC_NUM_RE = /([0-9]{1,3}(?:[., ][0-9]{3})+|[0-9]+)(?:,([0-9]{1,2}))?(?![0-9])/g;
+function fcMonedaDe(tok) {
+  if (tok === String.fromCharCode(8364) || tok.indexOf('eur') === 0) return 'EUR';
+  if (tok === '£' || tok === 'gbp' || tok.indexOf('libra') === 0) return 'GBP';
+  if (tok === 'us$' || tok === 'u$s' || tok === 'usd' || tok.charAt(0) === 'd') return 'USD';
+  if (tok === 'soles' || tok === 'pen') return 'PEN';
+  if (tok.indexOf('quetzal') === 0 || tok === 'gtq') return 'GTQ';
+  if (tok === '$' || tok.indexOf('peso') === 0) return '';   // depende del país
+  return tok.toUpperCase();
+}
+function fcMontoEur(details, pais) {
+  if (!details) return 0;
+  var txtPremio = details.querySelector('.fc-det-premio .fc-det-txt');
+  var seg = (txtPremio ? txtPremio.textContent : (details.textContent.split('|')[2] || '')).toLowerCase();
+  var toks = [], m;
+  FC_MONEDA_RE.lastIndex = 0;
+  while ((m = FC_MONEDA_RE.exec(seg))) toks.push({ s: m.index, e: m.index + m[0].length, cod: fcMonedaDe(m[1]) });
+  if (!toks.length) return 0;
+  var explicita = toks.filter(function(t) { return t.cod; })[0];
+  var cod = explicita ? explicita.cod : (FC_PESO_PAIS[pais] || (seg.indexOf('$') !== -1 ? 'USD' : ''));
+  if (!FC_EUR[cod]) return 0;
+  var max = 0;
+  FC_NUM_RE.lastIndex = 0;
+  while ((m = FC_NUM_RE.exec(seg))) {
+    var ini = m.index, fin = ini + m[0].length;
+    var resto = seg.slice(fin, fin + 12);
+    var mult = /^ ?mil(?![a-z])/.test(resto) ? 1000 : (/^ ?mill[oó]n/.test(resto) ? 1000000 : 1);
+    // solo números pegados a una moneda (evita años, puestos, cantidad de ejemplares…)
+    var cerca = toks.some(function(t) { return (t.e <= ini && ini - t.e <= 3) || (t.s >= fin && t.s - fin <= 14); });
+    if (!cerca) continue;
+    var n = parseFloat(m[1].replace(/[., ]/g, '') + (m[2] ? '.' + m[2] : '')) * mult;
+    if (n * FC_EUR[cod] > max) max = n * FC_EUR[cod];
+  }
+  return max;
+}
+
+/* ─── EXTRAER DATOS DEL DOM (una sola vez) ─── */
+function fcExtract() {
+  var out = [];
+  document.querySelectorAll('.recuadro[id]').forEach(function(card) {
+    var agendar = card.querySelector('.link-agendar');
+    if (!agendar) return;
+    var p = (agendar.getAttribute('data-fecha') || '').split('/');
+    var c = {
+      card: card,
+      idx: out.length,
+      nuevo: !!card.querySelector('.novedad-icon'),
+      texto: fcNorm(card.textContent),
+      isoDate: p.length === 3 ? p[2] + '-' + p[1] + '-' + p[0] : '',
+      pais: fcPais(agendar.getAttribute('data-pais') || ''),
+      generos: [], generoTodos: false, premios: [], abierto: false,
+      envio: '', edades: [], residencias: []
+    };
+    var details = card.querySelector('.details');
+    if (details) {
+      details.querySelectorAll('a[style*="background-color"]').forEach(function(a) {
+        var bg  = (a.getAttribute('style') || '').toLowerCase();
+        var txt = a.textContent.trim();
+        if (!txt) return;
+        var cat = a.getAttribute('data-fc-cat');
+        if (bg.indexOf('#1e7e34') !== -1) {
+          // "Todos" (cualquier género) aparece al filtrar por cualquier género
+          if (cat === '*' || (!cat && txt.toLowerCase() === 'todos')) c.generoTodos = true;
+          else fcAdd(c.generos, cat || fcTitleCase(txt));
+        } else if (bg.indexOf('#7a5fa1') !== -1) {
+          fcAdd(c.premios, cat ? fcPremioCorto(cat) : fcTitleCase(txt));
+        } else if (bg.indexOf('#00695c') !== -1 && txt.toLowerCase() === 'todos') {
+          c.abierto = true;
+        }
+      });
+      details.querySelectorAll('.fc-para-tag').forEach(function(tag) {
+        var lab = (tag.getAttribute('data-categoria') || '').trim();
+        if (!lab) return;
+        var k = fcClasificarPara(lab);
+        fcAdd(k.tipo === 'edad' ? c.edades : c.residencias, k.val);
+      });
+    }
+    var ic = card.querySelector('table td:first-child a i');
+    if (ic) {
+      if (ic.classList.contains('fa-wifi'))     c.envio = 'electronico';
+      if (ic.classList.contains('fa-envelope')) c.envio = 'postal';
+    }
+    c.premioEur = fcMontoEur(details, c.pais);
+    out.push(c);
+  });
+  return out;
+}
+
+function fcValores(c, campo) {
+  var v = c[campo];
+  return Array.isArray(v) ? v : (v ? [v] : []);
+}
+
+/* ─── ¿UN CONCURSO PASA LOS FILTROS? ───
+   'excluir' salta un grupo: sirve para calcular cuántos resultados daría
+   cada opción de ese grupo con el resto de los filtros aplicados (facetado). */
+function fcPasa(c, excluir) {
+  if (fcPalabras.length && !fcPalabras.every(function(w) { return c.texto.indexOf(w) !== -1; })) return false;
+  if (excluir !== 'fecha') {
+    if (fcState.dateFrom && c.isoDate && c.isoDate < fcState.dateFrom) return false;
+    if (fcState.dateTo   && c.isoDate && c.isoDate > fcState.dateTo)   return false;
+  }
+  if (excluir !== 'abiertos' && fcState.soloAbiertos && !c.abierto) return false;
+  if (excluir !== 'mipais' && fcState.miPais && fcMiPais && !fcParaMiPais(c)) return false;
+  for (var i = 0; i < FC_GRUPOS.length; i++) {
+    var g = FC_GRUPOS[i], sel = fcState[g.key];
+    if (g.key === excluir || !sel.size) continue;
+    if (g.key === 'generos' && c.generoTodos) continue;
+    if (!fcValores(c, g.campo).some(function(v) { return sel.has(v); })) return false;
+  }
+  return true;
+}
+
+function fcConteo(g) {
+  var cnt = {};
+  fcData.forEach(function(c) {
+    if (!fcPasa(c, g.key)) return;
+    var vals = fcValores(c, g.campo);
+    if (g.key === 'generos' && c.generoTodos) vals = vals.concat(g.orden.filter(function(v) { return vals.indexOf(v) === -1; }));
+    vals.forEach(function(v) { cnt[v] = (cnt[v] || 0) + 1; });
+  });
+  return cnt;
+}
+
+/* Orden fijo de cada grupo (por cantidad total, desempate alfabético) para que los chips no salten */
+function fcCalcularOrden() {
+  FC_GRUPOS.forEach(function(g) {
+    var tot = {};
+    fcData.forEach(function(c) { fcValores(c, g.campo).forEach(function(v) { tot[v] = (tot[v] || 0) + 1; }); });
+    var vals = Object.keys(tot);
+    if (g.key === 'edades') {
+      vals.sort(function(a, b) { return FC_EDAD_ORDEN.indexOf(a) - FC_EDAD_ORDEN.indexOf(b); });
+    } else if (g.key === 'envios') {
+      vals = ['electronico', 'postal'].filter(function(v) { return tot[v]; });
+    } else {
+      vals.sort(function(a, b) { return (tot[b] - tot[a]) || a.localeCompare(b, 'es'); });
+    }
+    g.orden = vals;
+  });
+}
+
+/* ─── ORDEN ───
+   "Por fecha de cierre" es el orden original, con las cabeceras de mes.
+   Los otros mueven las tarjetas a un contenedor propio (las cabeceras y el
+   índice de meses se ocultan solos porque sus secciones quedan vacías) y
+   dejan una marca en el lugar original para poder volver. Los anuncios del
+   tema se redistribuyen con el evento fc:filtrado, que sigue el orden del DOM. */
+function fcOrdenar() {
+  var cont = document.getElementById('fc-ordenados');
+  if (fcState.orden === 'cierre') {
+    if (!cont) return;
+    fcData.forEach(function(c) { c.marca.parentNode.insertBefore(c.card, c.marca.nextSibling); });
+    cont.parentNode.removeChild(cont);
+    return;
+  }
+  if (!cont) {
+    fcData.forEach(function(c) {
+      if (!c.marca) { c.marca = document.createComment('fc'); c.card.parentNode.insertBefore(c.marca, c.card); }
+    });
+    cont = document.createElement('div');
+    cont.id = 'fc-ordenados';
+    // Debajo de la primera cabecera (que conserva el anuncio y el separador)
+    var raiz = document.getElementById('mes-0');
+    while (raiz && raiz.parentNode !== fcListaParent) raiz = raiz.parentNode;
+    fcListaParent.insertBefore(cont, raiz ? raiz.nextSibling : fcData[0].marca);
+  }
+  var cmp = fcState.orden === 'nuevos'
+    ? function(a, b) { return (b.nuevo - a.nuevo) || (a.idx - b.idx); }
+    : function(a, b) { return (b.premioEur - a.premioEur) || (a.idx - b.idx); };
+  fcData.slice().sort(cmp).forEach(function(c) { cont.appendChild(c.card); });
+}
+
+/* ─── BARRA FIJA EN CELULAR ─── */
+function fcSticky() {
+  var bar = document.getElementById('fc-sticky');
+  var wrap = document.getElementById('fc-filtros-wrap');
+  if (!bar || !wrap || !('IntersectionObserver' in window)) return;
+  var fin = document.getElementById('reglas');
+  var arriba = false, alFinal = false;
+  var upd = function() {
+    var on = arriba && !alFinal;
+    bar.classList.toggle('visible', on);
+    bar.setAttribute('aria-hidden', on ? 'false' : 'true');
+  };
+  new IntersectionObserver(function(es) {
+    arriba = !es[0].isIntersecting && es[0].boundingClientRect.top < 0; upd();
+  }).observe(wrap);
+  if (fin) new IntersectionObserver(function(es) {
+    alFinal = es[0].isIntersecting || es[0].boundingClientRect.top < 0; upd();
+  }).observe(fin);
+  document.getElementById('fc-sticky-btn').onclick = function() {
+    if (!fcPanelOpen) fcTogglePanel();
+    wrap.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  };
+}
+
+/* ─── RENDER DE CHIPS ─── */
+function fcChip(label, n, on, onclick) {
+  var btn = document.createElement('button');
+  btn.type = 'button';
+  btn.className = 'fc-chip' + (on ? ' active' : '');
+  btn.innerHTML = '<i class="fa-solid fa-check fc-chip-check"></i>' + fcEsc(label) +
+                  (n !== null ? ' <span class="fc-chip-n">' + n + '</span>' : '');
+  btn.onclick = function(e) { e.stopPropagation(); onclick(); };
+  return btn;
+}
+
+function fcRenderGrupo(g) {
+  var wrap = document.getElementById(g.el);
+  if (!wrap) return;
+  var cnt = fcConteo(g), sel = fcState[g.key];
+  var vals = g.orden.concat(Array.from(sel).filter(function(v) { return g.orden.indexOf(v) === -1; }));
+  // País del visitante primero (y destacado) si hay concursos de ese país
+  var mio = (g.key === 'paises' && fcMiPais && (cnt[fcMiPais] || sel.has(fcMiPais))) ? fcMiPais : '';
+  if (mio) vals = [mio].concat(vals.filter(function(v) { return v !== mio; }));
+  wrap.innerHTML = '';
+  vals.forEach(function(v) {
+    var n = cnt[v] || 0, on = sel.has(v);
+    if (!n && !on) return;   // opciones que darían 0 resultados no se ofrecen
+    var chip = fcChip(g.key === 'envios' ? FC_ENVIO_LABEL[v] : v, n, on, function() {
+      if (sel.has(v)) sel.delete(v); else sel.add(v);
+      fcApply();
+    });
+    if (v === mio) {
+      chip.classList.add('fc-chip-mio');
+      chip.insertAdjacentHTML('afterbegin', '<i class="fa-solid fa-location-dot" aria-hidden="true"></i>');
+      chip.title = 'Tu país';
+    }
+    wrap.appendChild(chip);
+  });
+  var sub = document.getElementById(g.el.replace('fc-chips-', 'fc-sub-'));
+  if (sub) sub.style.display = wrap.children.length ? '' : 'none';
+}
+
+function fcParaMiPais(c) {
+  return c.abierto || c.residencias.indexOf(fcMiPais) !== -1;
+}
+function fcRenderAbiertos() {
+  var wrap = document.getElementById('fc-chips-participacion');
+  if (!wrap) return;
+  wrap.innerHTML = '';
+  // "Abiertos a todos o a <país del visitante>": incluye los que piden residir en su país
+  if (fcMiPais) {
+    // solo si hay concursos que piden residir en el país del visitante (si no, es igual a "Abiertos a todos")
+    var propios = fcData.filter(function(c) { return c.residencias.indexOf(fcMiPais) !== -1 && fcPasa(c, 'mipais'); }).length;
+    var m = fcData.filter(function(c) { return fcParaMiPais(c) && fcPasa(c, 'mipais'); }).length;
+    if (propios || fcState.miPais) {
+      wrap.appendChild(fcChip('Abiertos a todos o a ' + fcMiPais, m, fcState.miPais, function() {
+        fcState.miPais = !fcState.miPais;
+        fcApply();
+      }));
+    }
+  }
+  var n = fcData.filter(function(c) { return c.abierto && fcPasa(c, 'abiertos'); }).length;
+  if (!n && !fcState.soloAbiertos) return;
+  wrap.appendChild(fcChip('Abiertos a todos', n, fcState.soloAbiertos, function() {
+    fcState.soloAbiertos = !fcState.soloAbiertos;
+    fcApply();
+  }));
+}
+
+/* País del visitante: window.FC_COUNTRY si el Worker lo inyecta; si no, /cdn-cgi/trace
+   de Cloudflare (mismo origen, sin costo), cacheado en la sesión. */
+function fcDetectarPais() {
+  var usar = function(code) {
+    var nombre = FC_ISO[(code || '').toUpperCase()] || '';
+    if (nombre === fcMiPais) return;
+    fcMiPais = nombre;
+    fcApply();
+  };
+  var code = window.FC_COUNTRY || '';
+  if (!code) { try { code = sessionStorage.getItem('fc_pais') || ''; } catch(e) {} }
+  if (code) { usar(code); return; }
+  if (!window.fetch) return;
+  fetch('/cdn-cgi/trace', { credentials: 'omit' })
+    .then(function(r) { return r.ok ? r.text() : ''; })
+    .then(function(t) {
+      var m = t.match(/^loc=([A-Z]{2})$/m);
+      if (!m) return;
+      try { sessionStorage.setItem('fc_pais', m[1]); } catch(e) {}
+      usar(m[1]);
+    })
+    .catch(function() {});
+}
+
+/* ─── FECHAS RÁPIDAS ─── */
+function fcFmt(d) {
+  var pad = function(n) { return String(n).padStart(2, '0'); };
+  return d.getFullYear() + '-' + pad(d.getMonth() + 1) + '-' + pad(d.getDate());
+}
+function fcQuicks() {
+  var t = new Date(), y = t.getFullYear(), m = t.getMonth(), d = t.getDate();
+  return [
+    { label: 'Próximos 7 días',  from: fcFmt(t), to: fcFmt(new Date(y, m, d + 7)) },
+    { label: 'Próximos 15 días', from: fcFmt(t), to: fcFmt(new Date(y, m, d + 15)) },
+    { label: 'Este mes',         from: fcFmt(t), to: fcFmt(new Date(y, m + 1, 0)) },
+    { label: 'Próx. 3 meses',    from: fcFmt(t), to: fcFmt(new Date(y, m + 3, 0)) },
+    { label: 'Año siguiente',    from: fcFmt(new Date(y + 1, 0, 1)), to: fcFmt(new Date(y + 1, 11, 31)) }
+  ];
+}
+function fcQuickActivo() {
+  return fcQuicks().filter(function(q) { return q.from === fcState.dateFrom && q.to === fcState.dateTo; })[0] || null;
+}
+function fcSetFechas(from, to) {
+  fcState.dateFrom = from; fcState.dateTo = to;
+  document.getElementById('fc-date-from').value = from;
+  document.getElementById('fc-date-to').value   = to;
+}
+function fcRenderQuick() {
+  var wrap = document.getElementById('fc-quick-dates');
+  if (!wrap) return;
+  wrap.innerHTML = '';
+  var act = fcQuickActivo();
+  fcQuicks().forEach(function(q) {
+    var on = !!act && act.label === q.label;
+    wrap.appendChild(fcChip(q.label, null, on, function() {
+      if (on) fcSetFechas('', ''); else fcSetFechas(q.from, q.to);
+      fcApply();
+    }));
+  });
+}
+function fcFechaTexto() {
+  var q = fcQuickActivo();
+  if (q) return q.label;
+  var f = function(iso) { var p = iso.split('-'); return p[2] + '/' + p[1]; };
+  if (fcState.dateFrom && fcState.dateTo) return 'Cierre del ' + f(fcState.dateFrom) + ' al ' + f(fcState.dateTo);
+  if (fcState.dateFrom) return 'Cierre desde el ' + f(fcState.dateFrom);
+  return 'Cierre hasta el ' + f(fcState.dateTo);
+}
+
+/* ─── FILTROS ACTIVOS (píldoras con ×) ─── */
+function fcActivos() {
+  var lista = [];
+  if (fcState.dateFrom || fcState.dateTo) lista.push({ label: fcFechaTexto(), quitar: function() { fcSetFechas('', ''); } });
+  if (fcState.texto) lista.push({ label: '"' + fcState.texto + '"', quitar: function() {
+    fcState.texto = ''; document.getElementById('fc-texto').value = '';
+  } });
+  if (fcState.miPais && fcMiPais) lista.push({ label: 'Abiertos a todos o a ' + fcMiPais, quitar: function() { fcState.miPais = false; } });
+  if (fcState.soloAbiertos) lista.push({ label: 'Abiertos a todos', quitar: function() { fcState.soloAbiertos = false; } });
+  FC_GRUPOS.forEach(function(g) {
+    fcState[g.key].forEach(function(v) {
+      lista.push({ label: g.key === 'envios' ? 'Envío ' + FC_ENVIO_LABEL[v].toLowerCase() : v,
+                   quitar: function() { fcState[g.key].delete(v); } });
+    });
+  });
+  return lista;
+}
+function fcRenderActivos(lista) {
+  var wrap = document.getElementById('fc-activos');
+  if (!wrap) return;
+  wrap.innerHTML = '';
+  lista.forEach(function(it) {
+    var b = document.createElement('button');
+    b.type = 'button';
+    b.className = 'fc-pill';
+    b.setAttribute('aria-label', 'Quitar filtro: ' + it.label);
+    b.innerHTML = fcEsc(it.label) + ' <i class="fa-solid fa-xmark" aria-hidden="true"></i>';
+    b.onclick = function(e) { e.stopPropagation(); it.quitar(); fcApply(); };
+    wrap.appendChild(b);
+  });
+}
+
+/* ─── ESTADO EN LA URL (#filtros?...) y en localStorage ─── */
+function fcSerializar() {
+  var qs = new URLSearchParams();
+  FC_GRUPOS.forEach(function(g) { if (fcState[g.key].size) qs.set(g.h, Array.from(fcState[g.key]).join('|')); });
+  if (fcState.soloAbiertos) qs.set('a', '1');
+  if (fcState.miPais) qs.set('mp', '1');
+  if (fcState.texto) qs.set('t', fcState.texto);
+  if (fcState.orden !== 'cierre') qs.set('o', fcState.orden);
+  if (fcState.dateFrom) qs.set('df', fcState.dateFrom);
+  if (fcState.dateTo)   qs.set('dt', fcState.dateTo);
+  return qs.toString();
+}
+function fcCargar(qs) {
+  FC_GRUPOS.forEach(function(g) {
+    var v = qs.get(g.h);
+    if (v) v.split('|').forEach(function(x) { if (x) fcState[g.key].add(x); });
+  });
+  fcState.soloAbiertos = qs.get('a') === '1';
+  fcState.miPais = qs.get('mp') === '1';
+  fcState.texto = qs.get('t') || '';
+  document.getElementById('fc-texto').value = fcState.texto;
+  fcState.orden = ['nuevos', 'premio'].indexOf(qs.get('o')) !== -1 ? qs.get('o') : 'cierre';
+  document.getElementById('fc-orden').value = fcState.orden;
+  fcSetFechas(qs.get('df') || '', qs.get('dt') || '');
+}
+function fcHashActual() {
+  return window.location.hash.indexOf('#filtros?') === 0 ? window.location.hash.slice(9) : null;
+}
+function fcGuardar(qs) {
+  try { if (qs) localStorage.setItem(FC_KEY, qs); else localStorage.removeItem(FC_KEY); } catch(e) {}
+  try {
+    var base = window.location.pathname + window.location.search;
+    if (qs) history.replaceState(history.state, '', base + '#filtros?' + qs);
+    else if (fcHashActual() !== null) history.replaceState(history.state, '', base);
+  } catch(e) {}
+  // Los listados partidos en dos páginas llevan los filtros al pasar de una a otra
+  document.querySelectorAll('a.fc-pager').forEach(function(a) {
+    a.href = a.getAttribute('data-base') + (qs ? '#filtros?' + qs : '');
+  });
+}
+function fcMarcarPaginador() {
+  document.querySelectorAll('.post a[href*="/p/concursos"]').forEach(function(a) {
+    if (!/^(siguiente|anterior)$/i.test(a.textContent.trim())) return;
+    if (a.closest('#fc-filtros-wrap, #fc-empty-state')) return;
+    a.classList.add('fc-pager');
+    a.setAttribute('data-base', a.href.split('#')[0]);
+  });
+}
+
+/* ─── APLICAR FILTROS ─── */
+window.fcApply = function() {
+  fcState.dateFrom = document.getElementById('fc-date-from').value || '';
+  fcState.dateTo   = document.getElementById('fc-date-to').value   || '';
+  fcPalabras = fcNorm(fcState.texto).split(' ').filter(function(w) { return w; });
+
+  var total = fcData.length, visible = 0;
+  fcData.forEach(function(c) {
+    var show = fcPasa(c, null);
+    c.card.classList.toggle('fc-hidden', !show);
+    if (show) visible++;
+  });
+
+  FC_GRUPOS.forEach(fcRenderGrupo);
+  fcRenderAbiertos();
+  fcRenderQuick();
+
+  // Lo que no hace falta para el primer pintado se difiere al próximo frame (INP)
+  requestAnimationFrame(function() {
+
+  // ── Limpiar espacios: ocultar/mostrar <br> y cabeceras de mes ──
+  if (!fcListaParent) return;
+
+  var parent   = fcListaParent;
+  var children = Array.prototype.slice.call(parent.childNodes);
+
+  function esCabeceraMes(node) {
+    return node.nodeType === 1 && node.querySelector && !!node.querySelector('h2[id^="mes-"]');
+  }
+
+  var secciones = [];
+  var secActual = null;
+  children.forEach(function(node) {
+    if (esCabeceraMes(node)) {
+      secActual = { header: node, nodes: [] };
+      secciones.push(secActual);
+    } else if (secActual) {
+      secActual.nodes.push(node);
+    }
+  });
+
+  // La primera cabecera de mes también lleva el anuncio previo al listado y el
+  // separador: nunca se oculta entera. Si su mes queda vacío (por filtros) o el
+  // orden no es por cierre, solo se oculta su título; y si su título no se ve,
+  // el separador del primer mes visible sobra (ya está el de la primera).
+  var porCierre = fcState.orden === 'cierre';
+  var tituloPrimeraOculto = false, separadorQuitado = false;
+  secciones.forEach(function(sec, iSec) {
+    var recuadros = sec.nodes.filter(function(n) {
+      return n.nodeType === 1 && n.classList && n.classList.contains('recuadro');
+    });
+    var recuadrosVisibles = recuadros.filter(function(n) {
+      return !n.classList.contains('fc-hidden');
+    });
+    var tieneVisible  = recuadrosVisibles.length > 0;
+    var ultimoVisible = tieneVisible ? recuadrosVisibles[recuadrosVisibles.length - 1] : null;
+
+    var titulo = sec.header.querySelector('h2:not([id])');
+    var separador = sec.header.querySelector('hr.divider');
+    if (iSec === 0) {
+      sec.header.style.display = '';
+      tituloPrimeraOculto = !(tieneVisible && porCierre);
+      if (titulo) titulo.style.display = tituloPrimeraOculto ? 'none' : '';
+    } else {
+      sec.header.style.display = tieneVisible ? '' : 'none';
+      if (separador) {
+        var quitar = tituloPrimeraOculto && tieneVisible && !separadorQuitado;
+        separador.style.display = quitar ? 'none' : '';
+        if (quitar) separadorQuitado = true;
+      }
+    }
+
+    sec.nodes.forEach(function(node) {
+      if (node.nodeType !== 1 || node.nodeName !== 'BR') return;
+      var prev = node.previousElementSibling;
+      if (!prev || !prev.classList || !prev.classList.contains('recuadro')) {
+        node.style.display = tieneVisible ? '' : 'none';
+        return;
+      }
+      var prevVisible = !prev.classList.contains('fc-hidden');
+      node.style.display = (prevVisible && prev !== ultimoVisible) ? '' : 'none';
+    });
+  });
+
+  // conteo resultado
+  var countEl = document.getElementById('fc-result-count');
+  if (countEl) {
+    countEl.innerHTML = visible === total
+      ? '<strong>' + total + '</strong> concursos en esta página'
+      : 'Mostrando <strong>' + visible + '</strong> de ' + total + ' concursos';
+  }
+
+  // empty state (con enlace a la otra página del listado, si la hay)
+  var empty = document.getElementById('fc-empty-state');
+  if (empty) empty.style.display = (visible === 0) ? '' : 'none';
+  var otra = document.getElementById('fc-empty-otra');
+  var pager = document.querySelector('a.fc-pager');
+  if (otra) {
+    otra.innerHTML = pager
+      ? 'Este listado sigue en otra página: <a href="' + fcEsc(pager.href) + '">probá los mismos filtros ahí</a>.'
+      : '';
+  }
+
+  // badges
+  FC_GRUPOS.forEach(function(g) { if (g.badge) fcUpdateBadge(g.badge, fcState[g.key].size); });
+  fcUpdateBadge('fc-badge-participacion', (fcState.soloAbiertos ? 1 : 0) + (fcState.miPais ? 1 : 0) + fcState.edades.size + fcState.residencias.size);
+  fcUpdateBadge('fc-badge-fecha', (fcState.dateFrom || fcState.dateTo) ? 1 : 0);
+
+  // filtros activos: resumen en la barra + píldoras quitables
+  var activos = fcActivos();
+  var summary = document.getElementById('fc-bar-summary');
+  if (summary) {
+    summary.textContent = activos.length
+      ? '\u2014 ' + visible + ' resultado' + (visible === 1 ? '' : 's')
+      : '';
+  }
+  fcRenderActivos(activos);
+  var sticky = document.getElementById('fc-sticky-info');
+  if (sticky) {
+    sticky.textContent = activos.length
+      ? visible + ' de ' + total + ' concursos · ' + activos.length + (activos.length === 1 ? ' filtro' : ' filtros')
+      : total + ' concursos';
+  }
+  document.getElementById('fc-filtros-wrap').classList.toggle('has-filters', activos.length > 0);
+
+  fcGuardar(fcSerializar());
+
+  // ── Índice de meses: ocultar/mostrar cada enlace ──
+  document.querySelectorAll('a[href^="#mes-"]').forEach(function(link) {
+    var mesId = link.getAttribute('href').replace('#', '');
+    var ancla = document.getElementById(mesId);
+    if (!ancla) return;
+
+    var nodoRaiz = ancla;
+    while (nodoRaiz.parentNode && nodoRaiz.parentNode !== fcListaParent) {
+      nodoRaiz = nodoRaiz.parentNode;
+    }
+
+    var hayVisible = false;
+    var sibling = nodoRaiz.nextElementSibling;
+    while (sibling) {
+      if (esCabeceraMes(sibling)) break;
+      if (sibling.classList && sibling.classList.contains('recuadro') && !sibling.classList.contains('fc-hidden')) {
+        hayVisible = true;
+        break;
+      }
+      sibling = sibling.nextElementSibling;
+    }
+
+    link.style.display = hayVisible ? '' : 'none';
+
+    var next = link.nextSibling;
+    while (next && next.nodeType === 3 && next.textContent.trim() === '') {
+      next = next.nextSibling;
+    }
+    if (next && next.nodeName === 'BR') {
+      next.style.display = hayVisible ? '' : 'none';
+    }
+  });
+
+  // Redistribuir anuncios entre recuadros visibles
+  document.dispatchEvent(new CustomEvent('fc:filtrado'));
+
+  }); // fin requestAnimationFrame
+};
+
+function fcUpdateBadge(id, count) {
+  var el = document.getElementById(id);
+  if (!el) return;
+  el.textContent = count;
+  el.classList.toggle('visible', count > 0);
+}
+
+/* ─── LIMPIAR TODO ─── */
+window.fcClearAll = function(e) {
+  if (e) e.stopPropagation();
+  FC_GRUPOS.forEach(function(g) { fcState[g.key].clear(); });
+  fcState.soloAbiertos = false;
+  fcState.miPais = false;
+  fcState.texto = '';
+  document.getElementById('fc-texto').value = '';
+  fcSetFechas('', '');
+  fcApply();
+};
+
+/* ─── INIT ─── */
+function fcInit() {
+  fcData = fcExtract();
+  fcListaParent = fcData.length ? fcData[0].card.parentNode : null;
+  fcCalcularOrden();
+  fcMarcarPaginador();
+
+  // Búsqueda por texto (con una pequeña espera entre teclas) y orden
+  var inTexto = document.getElementById('fc-texto'), tTexto = null;
+  inTexto.addEventListener('input', function() {
+    clearTimeout(tTexto);
+    tTexto = setTimeout(function() { fcState.texto = inTexto.value.trim(); fcApply(); }, 200);
+  });
+  document.getElementById('fc-orden').addEventListener('change', function() {
+    fcState.orden = this.value;
+    fcOrdenar();
+    fcApply();
+  });
+
+  // Restaurar: primero el enlace (#filtros?...), si no, lo guardado en este listado
+  var qs = fcHashActual();
+  if (qs === null) { try { qs = localStorage.getItem(FC_KEY); } catch(e) { qs = null; } }
+  if (qs) {
+    fcCargar(new URLSearchParams(qs));
+    if (fcActivos().length) {
+      fcPanelOpen = true;
+      document.getElementById('fc-filtros-wrap').classList.add('open');
+    }
+    fcOrdenar();
+  }
+  fcApply();
+  fcDetectarPais();
+  fcSticky();
+}
+
+if (document.readyState === 'loading') {
+  document.addEventListener('DOMContentLoaded', fcInit);
+} else {
+  fcInit();
+}
+
+})();
+} catch (e) { console.error('[fc-listados.js bloque 4]', e); }
+
+/* ── bloque 5/5 · accesibilidad del panel y de los favoritos ── */
+/* Accesibilidad del panel de filtros y de los botones de favorito */
+try {
+(function () {
+  'use strict';
+
+  function onKey(el, fn) {
+    el.addEventListener('keydown', function (e) {
+      if (e.target !== el) return;
+      if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); fn(); }
+    });
+  }
+
+  function enhance() {
+    var wrap = document.getElementById('fc-filtros-wrap');
+    if (!wrap || wrap.dataset.a11y) return;
+    wrap.dataset.a11y = '1';
+
+    // Barra principal: el rol va en la etiqueta (el botón "Limpiar" ya es un <button>, no se anida)
+    var label = document.getElementById('fc-bar-label');
+    if (label) {
+      label.setAttribute('role', 'button');
+      label.setAttribute('tabindex', '0');
+      label.setAttribute('aria-controls', 'fc-panel');
+      onKey(label, function () { label.click(); });
+      var syncBar = function () { label.setAttribute('aria-expanded', wrap.classList.contains('open') ? 'true' : 'false'); };
+      syncBar();
+      new MutationObserver(syncBar).observe(wrap, { attributes: true, attributeFilter: ['class'] });
+    }
+
+    // Grupos plegables
+    wrap.querySelectorAll('.fc-group').forEach(function (g) {
+      var h = g.querySelector('.fc-group-header'), b = g.querySelector('.fc-group-body');
+      if (!h || !b) return;
+      h.setAttribute('role', 'button');
+      h.setAttribute('tabindex', '0');
+      h.setAttribute('aria-controls', b.id);
+      onKey(h, function () { h.click(); });
+      var sync = function () { h.setAttribute('aria-expanded', g.classList.contains('open') ? 'true' : 'false'); };
+      sync();
+      new MutationObserver(sync).observe(g, { attributes: true, attributeFilter: ['class'] });
+    });
+
+    // Etiquetas de los campos de fecha
+    [['fc-date-from', 'Fecha de cierre desde'], ['fc-date-to', 'Fecha de cierre hasta']].forEach(function (p) {
+      var i = document.getElementById(p[0]);
+      if (i) {
+        i.setAttribute('aria-label', p[1]);
+        var l = i.parentNode && i.parentNode.querySelector('label');
+        if (l) l.setAttribute('for', p[0]);
+      }
+    });
+
+    // Chips: aria-pressed sincronizado con la clase .active (los chips se re-renderizan)
+    var syncChips = function () {
+      wrap.querySelectorAll('.fc-chip').forEach(function (c) {
+        var on = c.classList.contains('active') ? 'true' : 'false';
+        if (c.getAttribute('aria-pressed') !== on) c.setAttribute('aria-pressed', on);
+        if (!c.hasAttribute('type')) c.setAttribute('type', 'button');
+      });
+    };
+    syncChips();
+    new MutationObserver(syncChips).observe(wrap, { subtree: true, childList: true, attributes: true, attributeFilter: ['class'] });
+
+    // Resultado del filtrado anunciado a lectores de pantalla
+    var sum = document.getElementById('fc-bar-summary');
+    if (sum) { sum.setAttribute('role', 'status'); sum.setAttribute('aria-live', 'polite'); }
+  }
+
+  // Botones de favorito: nombre accesible según el estado (0 sin marcar, 1 favorito, 2 ya participé)
+  var ETQ = ['Guardar en favoritos', 'Marcado como favorito. Pulsar para marcar como ya participé', 'Marcado como ya participé. Pulsar para desmarcar'];
+  function favLabels() {
+    document.querySelectorAll('button.btn-fav').forEach(function (b) {
+      var e = 0;
+      try { e = parseInt(localStorage.getItem('fav_' + b.getAttribute('data-id')) || '0', 10) || 0; } catch (x) {}
+      var res = (e === 2 && typeof fcResNombre === 'function') ? fcResNombre(b.getAttribute('data-id')) : '';
+      var etq = res ? 'Ya participé · ' + res + '. Pulsar para desmarcar' : (ETQ[e] || ETQ[0]);
+      b.setAttribute('aria-label', etq);
+      if (!b.hasAttribute('data-titulo')) b.setAttribute('data-titulo', b.getAttribute('title') || '');
+      b.setAttribute('title', res ? 'Ya participé · ' + res : b.getAttribute('data-titulo'));
+    });
+  }
+  document.addEventListener('click', function (e) {
+    if (e.target.closest && e.target.closest('button.btn-fav')) setTimeout(favLabels, 0);
+  });
+
+  function boot() { enhance(); favLabels(); }
+  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', boot);
+  else boot();
+})();
+} catch (e) { console.error('[fc-listados.js bloque 5]', e); }
+
+/* ── clics que llegaron antes de que cargara este archivo (los guarda el stub inline del listado) ── */
+(function (w) {
+  var q = w.__fcQL; w.__fcQL = null;
+  if (!q) return;
+  q.forEach(function (c) {
+    try { var fn = w[c[0]]; if (typeof fn === 'function' && !fn.__fcStub) fn.apply(c[2], c[1]); }
+    catch (e) { console.error('[fc-listados.js clic en cola]', e); }
+  });
+})(window);
