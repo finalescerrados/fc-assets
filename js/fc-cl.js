@@ -1,7 +1,7 @@
-/*! finalescerrados.com · fc-cl.js · fc-assets v10.16 · bloques que antes estaban inline en theme-parcheado.xml (2026-11-07).
-   Cada sentencia ejecutable va en su propio try/catch: si un bloque falla, los demás siguen corriendo (como cuando eran <script> separados). */
+/*! finalescerrados.com · fc-cl.js · fc-assets v10.18 · bloques propios de las fichas /p/cl-.
+   Cada sentencia ejecutable va en su propio try/catch: si un bloque falla, los demás siguen corriendo. */
 
-/* ── bloque 1/3 · antes en la línea 6548 del tema · // ====== PÁGINAS RELACIONADAS (p/cl-) ====== ── */
+/* ── bloque 1/3 · PÁGINAS RELACIONADAS (p/cl-) ── */
 //
 // ====== PÁGINAS RELACIONADAS (p/cl-) ======
 try {
@@ -139,7 +139,7 @@ try {
 } catch (e) { console.error('[fc-cl.js bloque 1]', e); }
 //
 
-/* ── bloque 2/3 · antes en la línea 7137 del tema · (function() { ── */
+/* ── bloque 2/3 · (function() { ── */
 //
 try {
 (function() {
@@ -326,7 +326,7 @@ try {
 } catch (e) { console.error('[fc-cl.js bloque 2]', e); }
 //
 
-/* ── bloque 3/3 · antes en la línea 7600 del tema · (function() { ── */
+/* ── bloque 3/3 · (function() { ── */
 //
 try {
 (function() {
@@ -408,3 +408,6 @@ try {
 })();
 } catch (e) { console.error('[fc-cl.js bloque 3]', e); }
 //
+
+/* ── clics que llegaron antes de que cargara este archivo (los guarda el stub inline del tema) ── */
+if (window.fcFlushQ) { try { window.fcFlushQ(); } catch (e) { console.error(e); } }

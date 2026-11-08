@@ -1,7 +1,7 @@
-/*! finalescerrados.com · fc-core.js · fc-assets v10.16 · bloques que antes estaban inline en theme-parcheado.xml (2026-11-07).
-   Cada sentencia ejecutable va en su propio try/catch: si un bloque falla, los demás siguen corriendo (como cuando eran <script> separados). */
+/*! finalescerrados.com · fc-core.js · fc-assets v10.18 · JS común a todas las páginas (antes inline en el tema).
+   Cada sentencia ejecutable va en su propio try/catch: si un bloque falla, los demás siguen corriendo. */
 
-/* ── bloque 1/11 · antes en la línea 4900 del tema · // La posición del toast-container es fija por CSS (según altura de la barra anc ── */
+/* ── bloque 1/24 · antes en el tema: La posición del toast-container es fija por CSS (según altura de la ba ── */
 //
 // La posición del toast-container es fija por CSS (según altura de la barra anchor-ad
 // por breakpoint: mobile 110px / tablet 100px / desktop 130px). No hace falta medir
@@ -54,7 +54,7 @@ window.mostrarToast = function(mensaje, tipo, destino) {
 } catch (e) { console.error('[fc-core.js bloque 1]', e); }
 //
 
-/* ── bloque 2/11 · antes en la línea 4953 del tema · let customshare_url = ''; ── */
+/* ── bloque 2/24 · antes en el tema: let customshare_url  ''; ── */
 //
 let customshare_url = '';
 let customshare_title = '';
@@ -127,7 +127,7 @@ document.addEventListener('click', function(event) {
 } catch (e) { console.error('[fc-core.js bloque 2]', e); }
 //
 
-/* ── bloque 3/11 · antes en la línea 5037 del tema · document.addEventListener('DOMContentLoaded', function() { ── */
+/* ── bloque 3/24 · antes en el tema: document.addEventListener('DOMContentLoaded', function() { ── */
   try {
 document.addEventListener('DOMContentLoaded', function() {
     let ipzScriptLoaded = false;
@@ -189,7 +189,7 @@ document.addEventListener('DOMContentLoaded', function() {
   });
 } catch (e) { console.error('[fc-core.js bloque 3]', e); }
 
-/* ── bloque 4/11 · antes en la línea 5255 del tema · (function () { ── */
+/* ── bloque 4/24 · antes en el tema: (function () { ── */
 //
 try {
 (function () {
@@ -736,7 +736,7 @@ try {
 } catch (e) { console.error('[fc-core.js bloque 4]', e); }
 //
 
-/* ── bloque 5/11 · antes en la línea 5814 del tema · // TOAST RECORDATORIO DE CONCURSOS POR VENCER ── */
+/* ── bloque 5/24 · antes en el tema: TOAST RECORDATORIO DE CONCURSOS POR VENCER ── */
 //
 // TOAST RECORDATORIO DE CONCURSOS POR VENCER
 try {
@@ -852,7 +852,7 @@ idle(actualizarFavBadge);
 } catch (e) { console.error('[fc-core.js bloque 5]', e); }
 //
 
-/* ── bloque 6/11 · antes en la línea 5927 del tema · // ====== FUNCIONES PARA PÁGINA INDIVIDUAL DE CONCURSOS ====== ── */
+/* ── bloque 6/24 · antes en el tema: FUNCIONES PARA PÁGINA INDIVIDUAL DE CONCURSOS ── */
 //
 // ====== FUNCIONES PARA PÁGINA INDIVIDUAL DE CONCURSOS ======
 
@@ -1210,7 +1210,7 @@ if (document.readyState === 'loading') {
 }
 //
 
-/* ── bloque 7/11 · antes en la línea 6284 del tema · // ====== RELATED POSTS ====== ── */
+/* ── bloque 7/24 · antes en el tema: RELATED POSTS ── */
 //
 // ====== RELATED POSTS ======
 try {
@@ -1327,7 +1327,7 @@ try {
 } catch (e) { console.error('[fc-core.js bloque 7]', e); }
 //
 
-/* ── bloque 8/11 · antes en la línea 6741 del tema · // ====== Schema markup para SEO con dateModified real ====== ── */
+/* ── bloque 8/24 · antes en el tema: Schema markup para SEO con dateModified real ── */
 //
 // ====== Schema markup para SEO con dateModified real ======
 try {
@@ -1510,7 +1510,7 @@ try {
 } catch (e) { console.error('[fc-core.js bloque 8]', e); }
 //
 
-/* ── bloque 9/11 · antes en la línea 6923 del tema · // ====== TABLA DE CONTENIDOS (h2 + h3 con indentación) ====== ── */
+/* ── bloque 9/24 · antes en el tema: TABLA DE CONTENIDOS (h2 + h3 con indentación) ── */
 //
 // ====== TABLA DE CONTENIDOS (h2 + h3 con indentación) ======
 try {
@@ -1585,7 +1585,7 @@ try {
 } catch (e) { console.error('[fc-core.js bloque 9]', e); }
 //
 
-/* ── bloque 10/11 · antes en la línea 7348 del tema · document.addEventListener('DOMContentLoaded', function() { ── */
+/* ── bloque 10/24 · antes en el tema: document.addEventListener('DOMContentLoaded', function() { ── */
 //
 try {
 document.addEventListener('DOMContentLoaded', function() {
@@ -1629,7 +1629,7 @@ document.addEventListener('DOMContentLoaded', function() {
 } catch (e) { console.error('[fc-core.js bloque 10]', e); }
 //
 
-/* ── bloque 11/11 · antes en la línea 7851 del tema · // Google Preferred Sources: carga 100% bajo demanda, cero costo hasta que ── */
+/* ── bloque 11/24 · antes en el tema: Google Preferred Sources: carga 100% bajo demanda, cero costo hasta qu ── */
 //
 // Google Preferred Sources: carga 100% bajo demanda, cero costo hasta que
 // el usuario interactúa con el ícono. Nada de script en el load de la página.
@@ -1690,12 +1690,870 @@ try {
 } catch (e) { console.error('[fc-core.js bloque 11]', e); }
 //
 
-/* ── clics que llegaron antes de que cargara este archivo (los guarda el stub inline del tema) ── */
-(function (w) {
-  var q = w.__fcQ; w.__fcQ = null;
-  if (!q) return;
-  q.forEach(function (c) {
-    try { var fn = w[c[0]]; if (typeof fn === 'function' && !fn.__fcStub) fn.apply(c[2], c[1]); }
-    catch (e) { console.error('[fc-core.js clic en cola]', e); }
+/* ── bloque 12/24 · antes en el tema (v10.18): function fxCopyReferencia(e) { ── */
+function fxCopyReferencia(e) {
+  var referencia = document.getElementById("referencia");
+  var texto = referencia.innerHTML;
+  // Reformatea la fecha al estándar APA usando la fecha ISO del abbr.published
+  var abbr = document.querySelector('abbr.published[title]');
+  if (abbr) {
+    var iso = abbr.getAttribute('title');
+    var d = new Date(iso);
+    if (!isNaN(d)) {
+      var meses = ['enero','febrero','marzo','abril','mayo','junio',
+                   'julio','agosto','septiembre','octubre','noviembre','diciembre'];
+      var fechaAPA = d.getFullYear() + ', ' + meses[d.getMonth()] + ' ' + d.getDate();
+      // Reemplaza el contenido entre paréntesis (la fecha que puso Blogger)
+      texto = texto.replace(/\([^)]+\)/, '(' + fechaAPA + ')');
+    }
+  }
+  navigator.clipboard.writeText(texto);
+  mostrarToast('Referencia APA copiada al portapapeles',"success");
+  e.preventDefault();
+  return false;
+}
+
+/* ── bloque 13/24 · antes en el tema (v10.18): window.addEventListener('load', function() { · solo si: /^\/p\//.test(location.pathname) ── */
+//
+if (/^\/p\//.test(location.pathname)) try {
+window.addEventListener('load', function() {
+  var isoMap = {
+    'argentina':'AR','españa':'ES','méxico':'MX','colombia':'CO','chile':'CL',
+    'perú':'PE','uruguay':'UY','venezuela':'VE','ecuador':'EC','bolivia':'BO',
+    'paraguay':'PY','cuba':'CU','costa rica':'CR','guatemala':'GT','honduras':'HN',
+    'nicaragua':'NI','panamá':'PA','el salvador':'SV','república dominicana':'DO',
+    'puerto rico':'PR','estados unidos':'US','ee.uu.':'US','eeuu':'US','usa':'US',
+    'reino unido':'GB','inglaterra':'GB','uk':'GB','francia':'FR','alemania':'DE',
+    'italia':'IT','portugal':'PT','suiza':'CH','bélgica':'BE','luxemburgo':'LU',
+    'andorra':'AD','eslovenia':'SI','serbia':'RS','rusia':'RU','israel':'IL',
+    'japón':'JP','corea del sur':'KR','australia':'AU','brasil':'BR','canadá':'CA',
+    'filipinas':'PH','guinea ecuatorial':'GQ'
+  };
+  var IMG_GENERICA = 'https://blogger.googleusercontent.com/img/a/AVvXsEgDYufY8Fk87y-ppkq_ldgPfwTMRkfanvAR1QPsrkEMFyHoNkz7eo43KJMVFMf_tyQL215aKDy0p4w2pKfKrBniEkr8XPNeIvfjJ6lW_QHJ3W59lrTZahN5xfkVdLfWtZ5VToJl2atZWSS_9WmoJGmJbInEhUIKBruwwzEc1h8kXTLF480ZGIR1EW058A=w640-h360';
+
+  function getISO(paisVal) {
+    if (!paisVal) return null;
+    var primer = paisVal.split(/[\/,;]/)[0].trim().toLowerCase();
+    return isoMap[primer] || null;
+  }
+  function getPaisFromTexto(texto) {
+    var partes = texto.split('|');
+    if (partes.length < 2) return null;
+    var pais = partes[partes.length - 1].trim().toLowerCase();
+    pais = pais.replace(/[^\x00-\x7F\u00C0-\u024F]+/g, '').trim();
+    return pais || null;
+  }
+  function getEntidadFromTexto(texto) {
+    var partes = texto.split('|');
+    if (partes.length < 3) return null;
+    return partes[partes.length - 2].trim() || null;
+  }
+  function getDescripcionFromTexto(texto) {
+    var partes = texto.split('|');
+    if (partes.length < 6) return null;
+    var premio = partes[3].trim();
+    var para   = partes[4].trim();
+    var desc   = '';
+    if (premio) desc += 'Premio: ' + premio + '.';
+    if (para)   desc += ' Abierto a: ' + para + '. Participación online.';
+    return desc.trim() || null;
+  }
+  var meses = {enero:1,febrero:2,marzo:3,abril:4,mayo:5,junio:6,julio:7,agosto:8,septiembre:9,octubre:10,noviembre:11,diciembre:12};
+  function parseFecha(str) {
+    var m1 = str.match(/(\d{2})\/(\d{2})\/(\d{4})/);
+    if (m1) return m1[3]+'-'+m1[2]+'-'+m1[1];
+    var m2 = str.match(/(\d+)\s+de\s+(\w+)\s+de\s+(\d{4})/i);
+    if (!m2) return null;
+    var mes = meses[m2[2].toLowerCase()];
+    if (!mes) return null;
+    return m2[3]+'-'+String(mes).padStart(2,'0')+'-'+String(m2[1]).padStart(2,'0');
+  }
+
+  var url = window.location.pathname;
+
+  /* ── PÁGINAS INDIVIDUALES DE CONCURSO ── */
+  if (/^\/p\/cl-/.test(url)) {
+    var nombre    = document.querySelector('h1.headline')?.firstChild?.textContent?.trim() || '';
+    var paisVal   = '';
+    var premioVal = '';
+    var paraVal   = '';
+    var schema = {
+      "@context": "https://schema.org",
+      "@type": "Event",
+      "name": nombre,
+      "url": window.location.href,
+      "eventStatus": "https://schema.org/EventScheduled",
+      "eventAttendanceMode": "https://schema.org/MixedEventAttendanceMode",
+      "image": IMG_GENERICA,
+      "organizer": { "@type": "Organization", "name": "", "url": window.location.href }
+    };
+    var timeEl = document.querySelector('.meta1 time[datetime]');
+    if (timeEl) {
+      var dt    = timeEl.getAttribute('datetime');
+      var parts = dt.split('-');
+      if (parts.length === 3) {
+        schema.startDate = parts[0]+'-'+parts[1].padStart(2,'0')+'-'+parts[2].padStart(2,'0');
+      }
+    }
+    document.querySelectorAll('table tr').forEach(function(tr) {
+      var celdas = tr.querySelectorAll('td');
+      if (celdas.length < 2) return;
+      var label = celdas[0].textContent.trim();
+      var valor = celdas[1].textContent.trim();
+      if (/cierre/i.test(label))    { var f = parseFecha(valor); if (f) schema.endDate = f; }
+      if (/^entidad$/i.test(label)) { schema.organizer.name = valor; }
+      if (/premio/i.test(label))    { premioVal = valor; }
+      if (/abierto/i.test(label))   { paraVal   = valor; }
+      if (/pa[íi]/i.test(label))    { paisVal   = valor; }
+    });
+    var desc = '';
+    if (premioVal) desc += 'Premio: ' + premioVal + '.';
+    if (paraVal)   desc += ' Abierto a: ' + paraVal + '. Participación online.';
+    if (desc) schema.description = desc.trim();
+    var iso = getISO(paisVal);
+    schema.location = {
+      "@type": "Place",
+      "name": schema.organizer.name || paisVal,
+      "address": { "@type": "PostalAddress", "addressLocality": paisVal, "addressCountry": iso || paisVal }
+    };
+    var s = document.createElement('script');
+    s.type = 'application/ld+json';
+    s.text = JSON.stringify(schema);
+    document.head.appendChild(s);
+
+  /* ── LISTADOS DE CONCURSOS ── */
+  } else if (/^\/p\/concursos/.test(url)) {
+    var mainContent = document.querySelector('#Blog1 .entry-content') || document.querySelector('#Blog1');
+    if (!mainContent) return;
+    var items = [];
+    var pos   = 1;
+    var vistos = {};
+    mainContent.querySelectorAll('a[href*="/p/cl-"]').forEach(function(a) {
+      var nombre = a.textContent.trim();
+      if (!nombre || vistos[a.href]) return;
+      vistos[a.href] = 1;
+      items.push({ "@type": "ListItem", "position": pos++, "url": a.href, "name": nombre });
+    });
+	if (items.length) {
+      var schema = {
+        "@context": "https://schema.org",
+        "@type": "ItemList",
+        "name": document.querySelector('h1.headline')?.firstChild?.textContent?.trim() || 'Concursos literarios',
+        "url": window.location.href,
+        "numberOfItems": items.length,
+        "itemListElement": items
+      };
+      var s = document.createElement('script');
+      s.type = 'application/ld+json';
+      s.text = JSON.stringify(schema);
+      document.head.appendChild(s);
+    }
+  }
+});
+} catch (e) { console.error('[fc-core.js bloque 13]', e); }
+//
+
+/* ── bloque 14/24 · antes en el tema (v10.18): window.addEventListener('load', function() { · solo si: (/^\/\d{4}\/\d{2}\/.+\.html$/.test(location.pathname) || /^\/p\//.test(location.pathname)) ── */
+//
+if ((/^\/\d{4}\/\d{2}\/.+\.html$/.test(location.pathname) || /^\/p\//.test(location.pathname))) try {
+window.addEventListener('load', function() {
+  // Buscar iframe de YouTube en el contenido
+  var content = document.querySelector('#Blog1 .entry-content, #Blog1 .post-body');
+  if (!content) return;
+  
+  var iframe = content.querySelector('iframe[src*="youtube.com/embed"]');
+  if (!iframe) return;
+  
+  // Extraer video ID
+  var src = iframe.getAttribute('src') || '';
+  var match = src.match(/youtube\.com\/embed\/([a-zA-Z0-9_-]+)/);
+  if (!match) return;
+  var videoId = match[1];
+  
+  // Datos del DOM
+  var titulo = document.querySelector('h1.headline')?.firstChild?.textContent?.trim()
+            || document.querySelector('title')?.textContent?.split(' | ')[0]?.trim()
+            || '';
+  
+  var descripcion = document.querySelector('meta[name="description"]')?.getAttribute('content')
+                 || document.querySelector('meta[property="og:description"]')?.getAttribute('content')
+                 || '';
+  
+  var fechaEl = document.querySelector('abbr.published[title]');
+  var uploadDate = fechaEl ? fechaEl.getAttribute('title') : '';
+  
+  var schema = {
+    "@context": "https://schema.org",
+    "@type": "VideoObject",
+    "name": titulo,
+    "description": descripcion,
+    "thumbnailUrl": "https://i.ytimg.com/vi/" + videoId + "/hqdefault.jpg",
+    "embedUrl": "https://www.youtube.com/embed/" + videoId,
+    "url": "https://www.youtube.com/watch?v=" + videoId,
+    "author": {
+      "@type": "Person",
+      "name": "Javier E.G. Andújar",
+      "url": "https://www.finalescerrados.com/p/el-autor.html"
+    },
+    "publisher": {
+      "@type": "Organization",
+      "name": "Finales Cerrados",
+      "url": "https://www.finalescerrados.com/"
+    }
+  };
+  
+  if (uploadDate) schema.uploadDate = uploadDate;
+  
+  var s = document.createElement('script');
+  s.type = 'application/ld+json';
+  s.text = JSON.stringify(schema);
+  document.head.appendChild(s);
+});
+} catch (e) { console.error('[fc-core.js bloque 14]', e); }
+//
+
+/* ── bloque 15/24 · antes en el tema (v10.18): (function () { ── */
+//
+try {
+(function () {
+function fcTgIniciar() {
+  var box = document.querySelector('.fc-tg');
+  if (!box || typeof fetch !== 'function') return;
+  var id = box.getAttribute('data-id') || '';
+  if (!/^[0-9]{6,25}$/.test(id)) { box.style.display = 'none'; return; }
+  var URL = 'https://finalescerrados-b075c-default-rtdb.firebaseio.com/plikes/' + id + '.json';
+  var KEY = 'fctg_' + id;
+  var btn = box.querySelector('.fc-tg-btn');
+  var on = false, total = null;
+  try { on = localStorage.getItem(KEY) === '1'; } catch (e) {}
+  function pintar() {
+    var n = total || 0, t;
+    btn.setAttribute('aria-pressed', on ? 'true' : 'false');
+    if (n === 1 && on) t = 'Te gust\u00f3: el primer coraz\u00f3n es el tuyo';
+    else if (on && n < 1) t = 'Te gust\u00f3. Toc\u00e1 para quitar el coraz\u00f3n';
+    else if (on) t = 'Te gust\u00f3 (' + n.toLocaleString('es') + ' lectores). Toc\u00e1 para quitar el coraz\u00f3n';
+    else if (n === 1) t = '\u00bfTe gust\u00f3? A 1 lector le gust\u00f3';
+    else if (n > 1) t = '\u00bfTe gust\u00f3? A ' + n.toLocaleString('es') + ' lectores les gust\u00f3';
+    else t = '\u00bfTe gust\u00f3? Dej\u00e1 un coraz\u00f3n';
+    btn.title = t;
+    btn.setAttribute('aria-label', t);
+    // Globito con el total, mismo estilo que el de los concursos (.fc-mg)
+    var b = btn.querySelector('.fc-mg');
+    if (n > 0) {
+      if (!b) { b = document.createElement('span'); b.className = 'fc-mg'; b.setAttribute('aria-hidden', 'true'); btn.appendChild(b); }
+      b.textContent = n < 1000 ? String(n) : String(Math.round(n / 100) / 10).replace('.', ',') + ' k';
+    } else if (b) { b.parentNode.removeChild(b); }
+  }
+  function cargar() {
+    fetch(URL, { priority: 'low' })
+      .then(function (r) { return r.ok ? r.json() : null; })
+      .then(function (n) { total = (typeof n === 'number' && n > 0) ? n : 0; pintar(); })
+      .catch(function () {});
+  }
+  btn.addEventListener('animationend', function () { btn.classList.remove('late'); });
+  btn.addEventListener('click', function () {
+    on = !on;
+    var d = on ? 1 : -1;
+    try { localStorage.setItem(KEY, on ? '1' : '0'); } catch (e) {}
+    if (total !== null) total = Math.max(0, total + d);
+    if (on) btn.classList.add('late');
+    pintar();
+    if (typeof mostrarToast === 'function' && on) mostrarToast('\u00a1Gracias por el coraz\u00f3n!', 'success');
+    // Incremento del lado del servidor, sin leer antes; la respuesta trae el total ya incrementado
+    fetch(URL, { method: 'PUT', keepalive: true, body: JSON.stringify({ '.sv': { increment: d } }) })
+      .then(function (r) { return r.ok ? r.json() : null; })
+      .then(function (n) { if (typeof n === 'number') { total = Math.max(0, n); pintar(); } })
+      .catch(function () {});
   });
-})(window);
+  pintar();
+  if ('IntersectionObserver' in window) {
+    var io = new IntersectionObserver(function (es) {
+      for (var i = 0; i < es.length; i++) if (es[i].isIntersecting) { io.disconnect(); cargar(); return; }
+    }, { rootMargin: '300px 0px' });
+    io.observe(box);
+  } else if (typeof idle === 'function') { idle(cargar); }
+}
+// El botón está más abajo, en la barra Compartir
+if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', fcTgIniciar); else fcTgIniciar();
+})();
+} catch (e) { console.error('[fc-core.js bloque 15]', e); }
+//
+
+/* ── bloque 16/24 · antes en el tema (v10.18): (function() { · solo si: !!document.getElementById('comment-holder') ── */
+    //
+    if (!!document.getElementById('comment-holder')) try {
+(function() {
+      if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', init);
+      } else {
+        init();
+      }
+
+      function init() {
+        var commentHolder = document.getElementById('comment-holder');
+        if (!commentHolder) {
+          console.warn('[FC] #comment-holder no encontrado');
+          return;
+        }
+
+        var replyParentId = null;
+        var formLoaded = false;
+
+        function loadCommentForm() {
+          if (formLoaded) return;
+          formLoaded = true;
+          var iframe = document.getElementById('comment-editor');
+          var srcEl = document.getElementById('comment-editor-src');
+          var srcHref = srcEl ? srcEl.getAttribute('href') : null;
+          if (iframe && srcHref && !iframe.getAttribute('src')) {
+            iframe.src = srcHref;
+            iframe.style.display = 'block';
+            iframe.style.visibility = 'visible';
+          }
+        }
+
+        function addReplyButtons() {
+          var topLevelOl = commentHolder.querySelector('ol#top-ra, .comment-thread > ol');
+          if (!topLevelOl) {
+            return;
+          }
+
+          var mainComments = topLevelOl.querySelectorAll(':scope > li.comment');
+
+          mainComments.forEach(function(li) {
+            if (li.querySelector('.fc-reply-btn')) return;
+
+            var commentId = li.id.replace(/^c/, '');
+            if (!commentId) {
+              var link = li.querySelector('a[href*="#comment-"]');
+              if (link) {
+                var match = link.href.match(/#comment-(\d+)/);
+                if (match) commentId = match[1];
+              }
+            }
+            if (!commentId) return;
+
+            var actionsSpan = li.querySelector('span.comment-actions');
+            if (!actionsSpan) return;
+
+            var originalLink = actionsSpan.querySelector('a.comment-reply');
+            var btn = document.createElement('a');
+            btn.href = 'javascript:void(0)';
+            btn.className = 'fc-reply-btn';
+            btn.textContent = 'Responder';
+            btn.setAttribute('data-comment-id', commentId);
+
+            if (originalLink) {
+              originalLink.style.display = 'none';
+              actionsSpan.insertBefore(btn, originalLink.nextSibling);
+            } else {
+              actionsSpan.appendChild(btn);
+            }
+
+            btn.addEventListener('click', function(e) {
+              e.preventDefault();
+              e.stopPropagation();
+              if (this.classList.contains('is-disabled')) return;
+              var id = this.getAttribute('data-comment-id');
+              fcReplyTo(id, this);
+            });
+          });
+
+          var allBtns = commentHolder.querySelectorAll('.fc-reply-btn');
+          allBtns.forEach(function(btn) {
+            if (!btn.closest('span.comment-actions')) {
+              btn.remove();
+            }
+          });
+        }
+        
+		window.fcReplyTo = function(commentId, btn) {
+          loadCommentForm();
+
+          var editor = document.getElementById('comment-editor');
+          var undoBtn = document.getElementById('comment-form-undo');
+          if (!editor) {
+            return;
+          }
+
+          var targetLi = document.getElementById('c' + commentId);
+          if (!targetLi) {
+            return;
+          }
+
+          // === CREAR WRAPPER PARA EL FORMULARIO ===
+          var wrapper = document.createElement('div');
+          wrapper.className = 'fc-reply-wrapper';
+          wrapper.style.cssText = 'clear:both;display:block;margin-top:8px;margin-bottom:8px;width:100%;';
+
+          // Mover el editor (iframe) al wrapper
+          editor.parentNode.removeChild(editor);
+          wrapper.appendChild(editor);
+
+          // Mover el botón de cancelar si existe
+          if (undoBtn) {
+            undoBtn.hidden = false;
+            if (undoBtn.parentNode) {
+              undoBtn.parentNode.removeChild(undoBtn);
+            }
+            wrapper.appendChild(undoBtn);
+          }
+
+          // === INSERTAR EL WRAPPER DENTRO DEL LI, DESPUÉS DEL CONTENIDO PRINCIPAL ===
+          // Buscar el div.comment-block (contenido principal)
+          var commentBlock = targetLi.querySelector('div.comment-block');
+          if (commentBlock) {
+            // Insertar el wrapper después del comment-block (pero antes de .comment-replies si existe)
+            var replies = targetLi.querySelector('div.comment-replies');
+            if (replies) {
+              // Insertar antes de las respuestas
+              commentBlock.parentNode.insertBefore(wrapper, replies);
+            } else {
+              // Insertar al final del li
+              targetLi.appendChild(wrapper);
+            }
+          } else {
+            // Fallback: insertar al final del li
+            targetLi.appendChild(wrapper);
+          }
+
+          // Forzar estilos en el iframe para que se muestre como bloque
+          editor.style.display = 'block';
+          editor.style.width = '100%';
+          editor.style.clear = 'both';
+          editor.style.position = 'relative';
+          editor.style.float = 'none';
+          editor.style.margin = '0';
+
+          // Actualizar URL del iframe con parentID
+          var src = editor.src || '';
+          var base = src.split('&parentID=')[0].split('#')[0];
+          editor.src = base + (commentId ? '&parentID=' + commentId : '');
+
+          // Deshabilitar link de respuesta
+          if (replyParentId) {
+            var oldBtn = document.querySelector('.fc-reply-btn[data-comment-id="' + replyParentId + '"]');
+            if (oldBtn) {
+              oldBtn.classList.remove('is-disabled');
+              oldBtn.removeAttribute('aria-disabled');
+              oldBtn.style.opacity = '1';
+            }
+          }
+          if (commentId && btn) {
+            btn.classList.add('is-disabled');
+            btn.setAttribute('aria-disabled', 'true');
+            btn.style.opacity = '0.5';
+          }
+          replyParentId = commentId;
+
+          // Desplazar para que sea visible
+          wrapper.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        };
+
+        window.fcUndoReply = function() {
+          var editor = document.getElementById('comment-editor');
+          var undoBtn = document.getElementById('comment-form-undo');
+          var container = document.getElementById('comment-form-container');
+          if (editor && container) {
+            // Eliminar el wrapper si existe
+            var wrapper = editor.closest('.fc-reply-wrapper');
+            if (wrapper) {
+              // Mover el editor de vuelta al contenedor
+              container.appendChild(editor);
+              // El botón de cancelar también debe volver
+              if (undoBtn) {
+                undoBtn.hidden = true;
+                container.appendChild(undoBtn);
+              }
+              // Eliminar el wrapper vacío
+              wrapper.remove();
+            } else {
+              // Fallback: mover directamente
+              container.insertBefore(editor, container.firstChild);
+              if (undoBtn) {
+                undoBtn.hidden = true;
+                container.appendChild(undoBtn);
+              }
+            }
+
+            if (replyParentId) {
+              var oldBtn = document.querySelector('.fc-reply-btn[data-comment-id="' + replyParentId + '"]');
+              if (oldBtn) {
+                oldBtn.classList.remove('is-disabled');
+                oldBtn.removeAttribute('aria-disabled');
+                oldBtn.style.opacity = '1';
+              }
+            }
+            var src = editor.src || '';
+            var base = src.split('&parentID=')[0].split('#')[0];
+            editor.src = base;
+            replyParentId = null;
+          }
+        };
+
+        // === INICIALIZACIÓN ===
+        var topLevelOl = commentHolder.querySelector('ol#top-ra, .comment-thread > ol');
+        if (topLevelOl && topLevelOl.querySelector(':scope > li.comment')) {
+          addReplyButtons();
+        } else {
+          var observer = new MutationObserver(function() {
+            var ol = commentHolder.querySelector('ol#top-ra, .comment-thread > ol');
+            if (ol && ol.querySelector(':scope > li.comment')) {
+              observer.disconnect();
+              addReplyButtons();
+            }
+          });
+          observer.observe(commentHolder, { childList: true, subtree: true });
+        }
+
+        var commentsSection = document.getElementById('comments');
+        if (commentsSection && 'IntersectionObserver' in window) {
+          var lazyObserver = new IntersectionObserver(function(entries) {
+            entries.forEach(function(entry) {
+              if (entry.isIntersecting) {
+                loadCommentForm();
+                lazyObserver.disconnect();
+              }
+            });
+          }, { rootMargin: '0px 0px 200px 0px' });
+          lazyObserver.observe(commentsSection);
+        } else {
+          setTimeout(loadCommentForm, 3000);
+        }
+      }
+    })();
+} catch (e) { console.error('[fc-core.js bloque 16]', e); }
+    //
+
+/* ── bloque 17/24 · antes en el tema (v10.18): document.addEventListener('DOMContentLoaded', function() { ── */
+//
+try {
+document.addEventListener('DOMContentLoaded', function() {
+  var items = document.querySelectorAll('ul.sn li');
+  items.forEach(function(li, i) { li.style.display = i < 4 ? '' : 'none'; });
+
+  var ul = document.querySelector('ul.sn');
+  if (!ul) return;
+  var toggle = document.createElement('li');
+  toggle.style.fontSize = '18px';
+  toggle.innerHTML = '<span class="fa-solid fa-caret-left" style="color:#bebebe !important"></span><span class="less" style="color:#bebebe !important;display:none"><i class="fa-solid fa-caret-right"></i></span>';
+  ul.appendChild(toggle);
+
+  toggle.addEventListener('click', function() {
+    var siblings = ul.querySelectorAll('li:not(:last-child)');
+    siblings.forEach(function(li, i) {
+      if (i > 0) li.style.display = li.style.display === 'none' ? '' : 'none';
+    });
+    var spans = toggle.querySelectorAll('span');
+    spans.forEach(function(s) {
+      s.style.display = s.style.display === 'none' ? 'inline' : 'none';
+    });
+  });
+
+  document.getElementById('SocialTable').style.display = 'block';
+});
+} catch (e) { console.error('[fc-core.js bloque 17]', e); }
+//
+
+/* ── bloque 18/24 · antes en el tema (v10.18): (function() { ── */
+try {
+(function() {
+  var defaultAvatar = 'https://www.blogger.com/img/blogger_logo_round_35.png';
+  var customAvatar  = 'https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEhCmNUf0uVSLazZ7a_2kdYF_dx9pdWxPMv_bf8OPuEGetWMJnEpKU3KwlemDrlRYu0RHL3pgnpK0wFxjIj49sqNi12e882QwmA01pI1UXjfKShK_15pkvUfgJUwHcIl796-wQk9t7NMbxDp2RVTgziUzpS4qDBs0-Um3cF5SFQos6OAAx1isLrjy1zCGQ/s1600/Cthulhu50x50.webp';
+
+  function reemplazarAvatares(root) {
+    var images = (root || document).getElementsByTagName('img');
+    for (var i = 0; i < images.length; i++) {
+      if (images[i].src === defaultAvatar) {
+        images[i].src = customAvatar;
+      }
+    }
+  }
+
+  // Pasada inicial sobre toda la página
+  reemplazarAvatares();
+
+  // Observer acotado a los comentarios (se cargan en diferido); sin #comment-holder no se crea
+  var holder = document.getElementById('comment-holder');
+  if (holder) {
+    new MutationObserver(function() {
+      reemplazarAvatares(holder);
+    }).observe(holder, { childList: true, subtree: true });
+  }
+})();
+} catch (e) { console.error('[fc-core.js bloque 18]', e); }
+
+/* ── bloque 19/24 · antes en el tema (v10.18): (function() { · solo si: (/^\/\d{4}\/\d{2}\/.+\.html$/.test(location.pathname) || /^\/p\/cl-/.test(location.pathname)) ── */
+//
+if ((/^\/\d{4}\/\d{2}\/.+\.html$/.test(location.pathname) || /^\/p\/cl-/.test(location.pathname))) try {
+(function() {
+  var FIREBASE_DB_URL = 'https://finalescerrados-b075c-default-rtdb.firebaseio.com';
+
+  /**
+   * Determina si la pagina actual es un post individual o una página estática /p/cl-.
+   * @returns {boolean} True si es un post o página /p/cl-, false en caso contrario.
+   */
+  function esPostIndividual() {
+      var path = window.location.pathname;
+      var esPost = /^\/\d{4}\/\d{2}\/.+\.html$/.test(path);
+      // Solo páginas estáticas que empiecen por /p/cl-
+      return esPost || /^\/p\/cl-/.test(path);
+  }
+  window.fcEsPostIndividual = esPostIndividual;
+
+  /**
+   * Incrementa el contador de vistas de un post usando la API REST de la
+   * Realtime Database. Deliberadamente NO usa headers custom (if-match,
+   * X-Firebase-ETag, Content-Type) para que el navegador trate las requests
+   * como "simple requests" y evite el preflight CORS (OPTIONS). Para un
+   * contador de vistas, perder ocasionalmente un incremento por una carrera
+   * de concurrencia es aceptable; no hace falta la garantia transaccional.
+   * No requiere descargar ningun SDK de Firebase.
+   */
+  async function incrementarVista(postId, viewContainer) {
+    var url = FIREBASE_DB_URL + '/pages/id/' + postId + '.json';
+
+    try {
+      // 1. Leemos el valor actual (request simple, sin headers custom).
+      var getResp = await fetch(url, { priority: 'low' });
+      if (!getResp.ok) {
+        console.warn('[fcVistas] GET fallo:', getResp.status, postId);
+        return;
+      }
+      var currentData = await getResp.json();
+      var nuevoValor = (currentData && currentData.value ? currentData.value : 0) + 1;
+
+      // 2. Escribimos el nuevo valor.
+      var putResp = await fetch(url, {
+        method: 'PUT',
+        priority: 'low',
+        body: JSON.stringify({ id: postId, value: nuevoValor })
+      });
+
+      if (putResp.ok) {
+        viewContainer.textContent = nuevoValor;
+      } else {
+        console.warn('[fcVistas] PUT fallo:', putResp.status, postId);
+      }
+
+    } catch (error) {
+      console.warn('[fcVistas] Error de red:', error, postId);
+    }
+  }
+
+  window.addEventListener('load', function() {
+    if (!esPostIndividual()) {
+        return;
+    }
+
+    var anchors = document.querySelectorAll('a[name]');
+
+    var ejecutar = function() {
+      anchors.forEach(function(anchor) {
+        var postId = anchor.getAttribute('name');
+        var viewContainer = anchor.parentElement.querySelector('#postviews');
+        if (!viewContainer) return;
+        incrementarVista(postId, viewContainer);
+      });
+    };
+
+    if ('requestIdleCallback' in window) {
+      requestIdleCallback(ejecutar, { timeout: 2000 });
+    } else {
+      setTimeout(ejecutar, 200);
+    }
+  });
+})();
+} catch (e) { console.error('[fc-core.js bloque 19]', e); }
+//
+
+/* ── bloque 20/24 · antes en el tema (v10.18): (function() { ── */
+//
+try {
+(function() {
+  function fcMostrarVistas() {
+    // Si la primera parte ya definió la función, la usamos
+    if (window.fcEsPostIndividual) return window.fcEsPostIndividual();
+    // Fallback: post o página /p/cl-
+    var path = window.location.pathname;
+    var esPost = /^\/\d{4}\/\d{2}\/.+\.html$/.test(path);
+    return esPost || /^\/p\/cl-/.test(path);
+  }
+  document.addEventListener('DOMContentLoaded', function() {
+    var span = document.getElementById('postviews');
+    if (!span) return;
+    var link = span.closest('a[name]');
+    // Si fcMostrarVistas() retorna true, no ocultamos (las vistas se deben ver)
+    if (!link || fcMostrarVistas()) return;
+    link.style.display = 'none';
+    var icon = link.previousElementSibling;
+    if (icon && icon.classList && icon.classList.contains('fa-eye')) {
+      icon.style.display = 'none';
+    }
+  });
+})();
+} catch (e) { console.error('[fc-core.js bloque 20]', e); }
+//
+
+/* ── bloque 21/24 · antes en el tema (v10.18): BARRA DE PROGRESO DE LECTURA ── */
+//
+// ====== BARRA DE PROGRESO DE LECTURA ======
+try {
+document.addEventListener('DOMContentLoaded', function() {
+  'use strict';
+  var path = window.location.pathname;
+  if (path === '/' || /^\/(search|label)\//.test(path)) return;
+  var bar = document.getElementById('reading-progress');
+  if (!bar) return;
+  var docHeight = 0;
+  var ticking = false;
+  function updateProgress() {
+    if (docHeight <= 0) return;
+    var scrollTop = window.scrollY || document.documentElement.scrollTop;
+    var pct = Math.min(100, Math.round((scrollTop / docHeight) * 100));
+    bar.style.width = pct + '%';
+  }
+  function recalcDocHeight() {
+    docHeight = document.documentElement.scrollHeight - window.innerHeight;
+    updateProgress();
+  }
+  function onScroll() {
+    if (ticking) return;
+    ticking = true;
+    requestAnimationFrame(function() {
+      updateProgress();
+      ticking = false;
+    });
+  }
+  window.addEventListener('scroll', onScroll, { passive: true });
+  window.addEventListener('resize', recalcDocHeight, { passive: true });
+  if ('ResizeObserver' in window) {
+    new ResizeObserver(recalcDocHeight).observe(document.body);
+  } else {
+    setTimeout(recalcDocHeight, 1500);
+  }
+  recalcDocHeight();
+});
+} catch (e) { console.error('[fc-core.js bloque 21]', e); }
+//
+
+/* ── bloque 22/24 · antes en el tema (v10.18): TOAST NOTIFICACIÓN DE NUEVAS ENTRADAS ── */
+//
+// TOAST NOTIFICACIÓN DE NUEVAS ENTRADAS
+try {
+window.addEventListener('load', function() {
+    idle(function() {
+        if (sessionStorage.getItem('toastNuevasEntradasMostrado')) return;
+
+        var ultimaVisita = localStorage.getItem('ultimaVisitaBlog');
+        var ahora = Date.now();
+
+        if (!ultimaVisita) {
+            localStorage.setItem('ultimaVisitaBlog', ahora);
+            return;
+        }
+
+        var meta = document.querySelector('meta[name="ultima-entrada"]');
+        if (!meta || !meta.content) return;
+
+        var fechaPost = new Date(meta.content).getTime();
+        ultimaVisita = parseInt(ultimaVisita, 10);
+
+        if (fechaPost > ultimaVisita && typeof mostrarToast === 'function') {
+            var metaUrl = document.querySelector('meta[name="ultima-entrada-url"]');
+            mostrarToast('Hay nuevas entradas desde tu última visita', 'info', metaUrl && metaUrl.content ? metaUrl.content : null);
+            sessionStorage.setItem('toastNuevasEntradasMostrado', 'true');
+        }
+
+        localStorage.setItem('ultimaVisitaBlog', ahora);
+    });
+});
+} catch (e) { console.error('[fc-core.js bloque 22]', e); }
+//
+
+/* ── bloque 23/24 · antes en el tema (v10.18): Delay menu close ── */
+//Delay menu close
+try {
+(function() {
+  var closeTimers = [];
+  var items = document.querySelectorAll('.navbar .nav > li, .navbar .nav li.dropdown-submenu');
+  
+  items.forEach(function(li, i) {
+    var sub = li.querySelector(':scope > ul');
+    if (!sub) return;
+    closeTimers[i] = null;
+
+    li.addEventListener('mouseenter', function() {
+      // Cerrar todos los hermanos del mismo nivel
+      var siblings = li.parentNode.querySelectorAll(':scope > li');
+      siblings.forEach(function(sib, j) {
+        if (sib !== li) {
+          var sibSub = sib.querySelector(':scope > ul');
+          if (sibSub) sibSub.style.display = 'none';
+        }
+      });
+      clearTimeout(closeTimers[i]);
+      sub.style.display = 'block';
+    });
+
+    li.addEventListener('mouseleave', function() {
+      closeTimers[i] = setTimeout(function() {
+        sub.style.display = 'none';
+      }, 1000); //delay en ms
+    });
+  });
+})();
+} catch (e) { console.error('[fc-core.js bloque 23]', e); }
+
+/* ── bloque 24/24 · UTM en enlaces a terceros de las páginas de concursos ── */
+try {
+(function () {
+  'use strict';
+  // UTM en los enlaces a sitios de terceros de las páginas de concursos. Se agregan al momento de usar
+  // el enlace (clic, clic medio, tocar, "copiar enlace"), así el HTML queda limpio y vale también para
+  // fichas y listados viejos sin regenerarlos.
+  var p = location.pathname;
+  var tipo = /^\/p\/cl-/.test(p) ? 'ficha'
+    : /^\/p\/concursos-literarios-calendario/.test(p) ? 'calendario'
+    : /^\/p\/concursos-literarios-/.test(p) ? 'listado'
+    : /^\/p\/mis-concursos-favoritos/.test(p) ? 'favoritos' : '';
+  if (!tipo) return;
+  var UTM = 'utm_source=finalescerrados&utm_medium=referral&utm_campaign=concursos-literarios&utm_content=' + tipo;
+  // Dominios propios: no se tocan
+  var PROPIOS = /(^|\.)(finalescerrados\.com|blogger\.com|blogspot\.com|googleusercontent\.com)$/i;
+  // Acortadores, redirectores, archivos web y apps donde los parámetros no llegan al destino o cambian el destino
+  var NO_TOCAR = /(^|\.)(bit\.ly|tinyurl\.com|t\.co|goo\.gl|forms\.gle|we\.tl|ow\.ly|buff\.ly|is\.gd|cutt\.ly|rebrand\.ly|shorturl\.at|lnkd\.in|wa\.me|api\.whatsapp\.com|web\.archive\.org|archive\.ph|archive\.today|l\.facebook\.com|lm\.facebook\.com|l\.instagram\.com)$/i;
+  // Documentos y archivos sueltos: no tienen analítica y algunos servidores los sirven con códigos en la URL
+  var DOC = /\.(pdf|docx?|odt|rtf|xlsx?|ods|pptx?|zip|rar|7z|epub|mobi|jpe?g|png|gif|webp|mp3|mp4)$/i;
+  // URLs firmadas o con credenciales temporales: cualquier cambio las invalida
+  var FIRMA = /(^|[?&])(x-amz-[^=&]*|x-goog-[^=&]*|googleaccessid|signature|sig|key-pair-id|policy|token|access_token|auth|authkey|hmac|hash|expires)=/i;
+  function conUtm(href) {
+    var m = /^(https?:\/\/)([^\/?#:@]+)(:\d+)?([^?#]*)(\?[^#]*)?(#.*)?$/i.exec(href || '');
+    if (!m) return null;                                   // relativos, mailto:, tel:, javascript:, etc.
+    var host = m[2], path = m[4] || '', q = m[5] || '', frag = m[6] || '';
+    if (PROPIOS.test(host) || NO_TOCAR.test(host)) return null;
+    if (/[?&]utm_[a-z]+=/i.test(q)) return null;            // ya trae UTM (propias o de otro): se respetan
+    if (DOC.test(path) || FIRMA.test(q)) return null;
+    if (/=https?(%3A|:)/i.test(q)) return null;            // redirectores (…?url=https%3A…): cambiaría el destino
+    if (/\/url$/.test(path) && /(^|\.)google\./i.test(host)) return null;
+    // Se agrega al final del texto original, sin re-codificar nada de lo que ya tenía
+    var nq = !q ? '?' + UTM : (/[?&]$/.test(q) ? q + UTM : q + '&' + UTM);
+    var out = m[1] + host + (m[3] || '') + path + nq + frag;
+    return out.length > 2000 ? null : out;
+  }
+  function marcar(e) {
+    var a = e.target && e.target.closest ? e.target.closest('a[href]') : null;
+    if (!a || a.hasAttribute('data-fc-utm')) return;
+    a.setAttribute('data-fc-utm', '');
+    var nuevo = conUtm(a.getAttribute('href'));
+    if (nuevo) a.setAttribute('href', nuevo);
+  }
+  ['mousedown', 'touchstart', 'focusin', 'click', 'auxclick', 'contextmenu'].forEach(function (t) {
+    document.addEventListener(t, marcar, { capture: true, passive: true });
+  });
+  window.fcConUtm = conUtm;   // para probar desde la consola
+})();
+} catch (e) { console.error('[fc-core.js bloque 24]', e); }
+
+/* ── clics que llegaron antes de que cargara este archivo (los guarda el stub inline del tema) ── */
+if (window.fcFlushQ) { try { window.fcFlushQ(); } catch (e) { console.error(e); } }

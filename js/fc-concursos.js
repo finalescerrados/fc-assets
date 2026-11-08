@@ -1,7 +1,7 @@
-/*! finalescerrados.com · fc-concursos.js · fc-assets v10.16 · bloques que antes estaban inline en theme-parcheado.xml (2026-11-07).
-   Cada sentencia ejecutable va en su propio try/catch: si un bloque falla, los demás siguen corriendo (como cuando eran <script> separados). */
+/*! finalescerrados.com · fc-concursos.js · fc-assets v10.18 · sincronización de favoritos (Firebase) y relacionados de los listados.
+   Cada sentencia ejecutable va en su propio try/catch: si un bloque falla, los demás siguen corriendo. */
 
-/* ── bloque 1/1 · antes en la línea 4388 del tema · (function () { ── */
+/* ── bloque 1/2 · sincronización de favoritos con Firebase (fcSync) ── */
 //
 try {
 (function () {
@@ -510,3 +510,152 @@ try {
 })();
 } catch (e) { console.error('[fc-concursos.js bloque 1]', e); }
 //
+
+/* ── bloque 2/2 · entradas del blog relacionadas en listados · solo si: location.pathname.indexOf('/p/concursos') !== -1 ── */
+//
+// ====== ENTRADAS DEL BLOG RELACIONADAS EN LISTADOS (p/concursos) ======
+if (location.pathname.indexOf('/p/concursos') !== -1) try {
+(function() {
+  'use strict';
+  var url = window.location.pathname;
+  if (url.indexOf('/p/concursos') === -1) return;
+
+  var blogUrl = 'https://www.finalescerrados.com';
+  var cbName = '_prel_lst_' + Date.now();
+  var feedSrc = blogUrl + '/feeds/posts/summary/-/Concursos%20literarios?alt=json-in-script&max-results=20&callback=' + cbName;
+
+  function barajar(arr) {
+    for (var i = arr.length - 1; i > 0; i--) {
+      var j = Math.floor(Math.random() * (i + 1));
+      var tmp = arr[i]; arr[i] = arr[j]; arr[j] = tmp;
+    }
+    return arr;
+  }
+
+  function renderizar(posts) {
+    if (posts.length === 0) return;
+
+    var section = document.createElement('div');
+    section.className = 'related-posts';
+    var heading = document.createElement('h3');
+    heading.className = 'related-posts-title';
+    heading.textContent = 'Del blog';
+    section.appendChild(heading);
+
+    var grid = document.createElement('div');
+    grid.className = 'related-posts-container';
+
+    posts.forEach(function(post) {
+      var card = document.createElement('a');
+      card.href = post.link;
+      card.className = 'related-post-card' + (post.image ? '' : ' related-post-card--noimg');
+      card.target = '_self';
+
+      if (post.image) {
+        var imageDiv = document.createElement('div');
+        imageDiv.className = 'related-post-image';
+        var img = document.createElement('img');
+        img.src = post.image;
+        img.alt = post.title;
+        imageDiv.appendChild(img);
+        card.appendChild(imageDiv);
+      }
+
+      var contentDiv = document.createElement('div');
+      contentDiv.className = 'related-post-content';
+
+      if (!post.image) {
+        var iconEl = document.createElement('span');
+        iconEl.className = 'related-post-icon';
+        iconEl.innerHTML = '<i class="fas fa-feather-alt"></i>';
+        contentDiv.appendChild(iconEl);
+      }
+
+      var postTitle = document.createElement('h4');
+      postTitle.className = 'related-post-title';
+      postTitle.textContent = post.title;
+      contentDiv.appendChild(postTitle);
+
+      card.appendChild(contentDiv);
+      grid.appendChild(card);
+    });
+
+    section.appendChild(grid);
+
+    // Ad antes de relacionados
+	var adBeforeRelated = document.createElement('div');
+    adBeforeRelated.style.cssText = 'margin: 20px 0; text-align: center; overflow: hidden;';
+    adBeforeRelated.classList.add('ad-reservado');
+    adBeforeRelated.innerHTML = '<ins class="adsbygoogle"'
+      + ' style="display:block; text-align:center;"'
+      + ' data-ad-layout="in-article"'
+      + ' data-ad-format="fluid"'
+      + ' data-ad-client="ca-pub-7776262814765753"'
+      + ' data-ad-slot="8986089529"></ins>';
+
+    function registrarAdRelacionados() {
+      var ins = adBeforeRelated.querySelector('ins.adsbygoogle');
+      if (!ins) return;
+      if (window.adObserver) {
+        window.adObserver.observe(ins);
+      } else {
+        window.FC.pushAd(ins);
+      }
+    }
+
+    idle(function() {
+        var share = document.querySelector('.post-share');
+        if (share && share.parentNode) {
+            share.parentNode.insertBefore(adBeforeRelated, share.nextSibling);
+            share.parentNode.insertBefore(section, adBeforeRelated.nextSibling);
+            registrarAdRelacionados();
+        } else {
+            var container = document.querySelector('.entry-container');
+            if (container) {
+                container.appendChild(adBeforeRelated);
+                container.appendChild(section);
+                registrarAdRelacionados();
+            }
+        }
+    });
+  }
+
+  window[cbName] = function(json) {
+    delete window[cbName];
+    var s = document.getElementById(cbName);
+    if (s) s.parentNode.removeChild(s);
+    if (!json || !json.feed || !json.feed.entry) return;
+
+    var posts = [];
+    json.feed.entry.forEach(function(entry) {
+      var entryUrl = '';
+      if (entry.link) {
+        for (var i = 0; i < entry.link.length; i++) {
+          if (entry.link[i].rel === 'alternate') { entryUrl = entry.link[i].href; break; }
+        }
+      }
+      if (!entryUrl) return;
+      var postImage = '';
+      if (entry.media$thumbnail) {
+        postImage = entry.media$thumbnail.url.replace(/\/s72-c/, '/s400-c');
+      }
+      posts.push({ title: entry.title.$t, link: entryUrl, image: postImage });
+    });
+
+    posts = barajar(posts).slice(0, 3);
+    renderizar(posts);
+  };
+
+  var sc = document.createElement('script');
+  sc.id = cbName;
+  sc.fetchPriority = 'low'; // contenido debajo del fold, no crítico para el primer render
+  sc.src = feedSrc;
+  sc.async = true;
+  sc.onerror = function() { delete window[cbName]; };
+  idle(function () { document.body.appendChild(sc); });
+})();
+} catch (e) { console.error('[fc-concursos.js bloque 2]', e); }
+//
+
+/* ── clics que llegaron antes de que cargara este archivo (los guarda el stub inline del tema) ── */
+if (window.fcFlushQ) { try { window.fcFlushQ(); } catch (e) { console.error(e); } }
