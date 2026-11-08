@@ -2521,8 +2521,8 @@ try {
   var UTM = 'utm_source=finalescerrados&utm_medium=referral&utm_campaign=concursos-literarios&utm_content=' + tipo;
   // Dominios propios: no se tocan
   var PROPIOS = /(^|\.)(finalescerrados\.com|blogger\.com|blogspot\.com|googleusercontent\.com)$/i;
-  // Acortadores, redirectores, archivos web y apps donde los parámetros no llegan al destino o cambian el destino
-  var NO_TOCAR = /(^|\.)(bit\.ly|tinyurl\.com|t\.co|goo\.gl|forms\.gle|we\.tl|ow\.ly|buff\.ly|is\.gd|cutt\.ly|rebrand\.ly|shorturl\.at|lnkd\.in|wa\.me|api\.whatsapp\.com|web\.archive\.org|archive\.ph|archive\.today|l\.facebook\.com|lm\.facebook\.com|l\.instagram\.com)$/i;
+  // Acortadores, redirectores, archivos web, pagos y apps donde los parámetros no llegan al destino o lo cambian
+  var NO_TOCAR = /(^|\.)(bit\.ly|tinyurl\.com|t\.co|goo\.gl|forms\.gle|we\.tl|ow\.ly|buff\.ly|is\.gd|cutt\.ly|rebrand\.ly|shorturl\.at|lnkd\.in|wa\.me|api\.whatsapp\.com|web\.archive\.org|archive\.ph|archive\.today|l\.facebook\.com|lm\.facebook\.com|l\.instagram\.com|mpago\.la|mercadopago\.com(\.[a-z]{2})?|paypal\.com|paypal\.me)$/i;
   // Documentos y archivos sueltos: no tienen analítica y algunos servidores los sirven con códigos en la URL
   var DOC = /\.(pdf|docx?|odt|rtf|xlsx?|ods|pptx?|zip|rar|7z|epub|mobi|jpe?g|png|gif|webp|mp3|mp4)$/i;
   // URLs firmadas o con credenciales temporales: cualquier cambio las invalida
@@ -2543,7 +2543,8 @@ try {
   }
   function marcar(e) {
     var a = e.target && e.target.closest ? e.target.closest('a[href]') : null;
-    if (!a || a.hasAttribute('data-fc-utm')) return;
+    // Solo enlaces del contenido del concurso/listado: no los del menú, lateral, pie, popups ni botones de compartir
+    if (!a || a.hasAttribute('data-fc-utm') || !a.closest('#Blog1 .entry-content, #Blog1 .post-body')) return;
     a.setAttribute('data-fc-utm', '');
     var nuevo = conUtm(a.getAttribute('href'));
     if (nuevo) a.setAttribute('href', nuevo);
