@@ -2532,12 +2532,15 @@ try {
     if (!m) return null;                                   // relativos, mailto:, tel:, javascript:, etc.
     var host = m[2], path = m[4] || '', q = m[5] || '', frag = m[6] || '';
     if (PROPIOS.test(host) || NO_TOCAR.test(host)) return null;
-    if (/[?&]utm_[a-z]+=/i.test(q)) return null;            // ya trae UTM (propias o de otro): se respetan
     if (DOC.test(path) || FIRMA.test(q)) return null;
     if (/=https?(%3A|:)/i.test(q)) return null;            // redirectores (…?url=https%3A…): cambiaría el destino
     if (/\/url$/.test(path) && /(^|\.)google\./i.test(host)) return null;
-    // Se agrega al final del texto original, sin re-codificar nada de lo que ya tenía
-    var nq = !q ? '?' + UTM : (/[?&]$/.test(q) ? q + UTM : q + '&' + UTM);
+    // Link armado por el organizador para nosotros (ya dice utm_source=finalescerrados): se respeta su campaña
+    if (/[?&]utm_source=finalescerrados(&|$)/i.test(q)) return null;
+    // Cualquier otro utm_* (de su newsletter, redes, etc.) se saca entero y van los nuestros.
+    // Los demás parámetros quedan tal cual, en su orden y sin re-codificar.
+    var resto = q ? q.slice(1).split('&').filter(function (t) { return t && !/^utm_[^=]*(=|$)/i.test(t); }) : [];
+    var nq = '?' + (resto.length ? resto.join('&') + '&' : '') + UTM;
     var out = m[1] + host + (m[3] || '') + path + nq + frag;
     return out.length > 2000 ? null : out;
   }
