@@ -75,7 +75,7 @@ function actualizarCookie() {
 var FC_LISTADOS; if (!__fcFavoritosSkip) { FC_LISTADOS = [
   { t: 'Populares',          u: '/p/concursos-literarios-mas-populares-hoy.html',  i: 'fa-fire' },
   { t: 'Nuevos',             u: '/p/concursos-literarios-agregados-esta.html',     i: 'fa-calendar-week' },
-  { t: 'Abiertos a todos',   u: '/p/concursos-literarios-abiertos-todos.html',     i: 'fa-users' },
+  { t: 'Por participante',   u: '/p/concursos-literarios-por-participante.html', i: 'fa-users' },
   { t: 'Envío electrónico',  u: '/p/concursos-literarios-que-permiten-envio.html', i: 'fa-wifi' },
   { t: 'Todos los concursos', u: '/p/concursos.html',                              i: 'fa-infinity' }
 ]; }

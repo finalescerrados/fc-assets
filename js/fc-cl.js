@@ -151,7 +151,7 @@ try {
     { texto: 'Populares', url: '/p/concursos-literarios-mas-populares-hoy.html', icono: 'fa-fire' },
     { texto: 'Nuevos', url: '/p/concursos-literarios-agregados-esta.html', icono: 'fa-calendar-week' },
     { texto: 'Calendario', url: '/p/concursos-literarios-calendario.html', icono: 'fa-calendar-alt' },
-    { texto: 'Abiertos a todos', url: '/p/concursos-literarios-abiertos-todos.html', icono: 'fa-users' },
+    { texto: 'Por participante', url: '/p/concursos-literarios-por-participante.html', icono: 'fa-users' },
     { texto: 'Envío electrónico', url: '/p/concursos-literarios-que-permiten-envio.html', icono: 'fa-wifi' }
   ];
 
