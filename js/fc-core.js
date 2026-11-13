@@ -713,12 +713,25 @@ try {
   crearBait();
   tiempo = parseInt(ssGet('fc_time_spent') || '0', 10);
 
+  // El tick solo cuenta tiempo; las comprobaciones (señuelo del bloqueador, capas en
+  // pantalla) fuerzan layout, así que corren en idle para no caer encima de un toque (INP).
+  var evaluando = false;
+  function evaluarEnIdle() {
+    if (evaluando) return;
+    evaluando = true;
+    var correr = function () {
+      evaluando = false;
+      if (estadoBloq !== true) bloqueador();
+      evaluar('timer');
+    };
+    if ('requestIdleCallback' in window) requestIdleCallback(correr, { timeout: 1000 });
+    else setTimeout(correr, 0);
+  }
   setInterval(function () {
     if (document.visibilityState !== 'visible') return; // solo cuenta con la pestaña visible
     tiempo++;
     ssSet('fc_time_spent', tiempo);
-    if (estadoBloq !== true) bloqueador();
-    evaluar('timer');
+    evaluarEnIdle();
   }, 1000);
 
   // Salida de cursor: pasa por la misma puerta que el temporizador (mismas capas, mismo

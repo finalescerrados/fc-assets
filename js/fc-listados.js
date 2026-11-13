@@ -588,14 +588,34 @@ function fcSticky() {
   };
 }
 
+/* ─── CEDER EL HILO (INP) ───
+   Los clics del panel primero muestran el cambio (chip marcado, píldora quitada) y
+   recién en la tarea siguiente filtran: el navegador pinta la respuesta al toque sin
+   esperar a que se recalcule todo el listado. */
+function fcCeder() {
+  if (window.scheduler && typeof scheduler.yield === 'function') return scheduler.yield();
+  return new Promise(function(r) { setTimeout(r, 0); });
+}
+function fcLuego(fn) {
+  fcCeder().then(function() {
+    try { fn(); } catch (err) { console.error('[fc-listados]', err); }
+  });
+}
+
 /* ─── RENDER DE CHIPS ─── */
 function fcChip(label, n, on, onclick) {
   var btn = document.createElement('button');
   btn.type = 'button';
   btn.className = 'fc-chip' + (on ? ' active' : '');
+  btn.setAttribute('aria-pressed', on ? 'true' : 'false');
   btn.innerHTML = '<i class="fa-solid fa-check fc-chip-check"></i>' + fcEsc(label) +
                   (n !== null ? ' <span class="fc-chip-n">' + n + '</span>' : '');
-  btn.onclick = function(e) { e.stopPropagation(); onclick(); };
+  btn.onclick = function(e) {
+    e.stopPropagation();
+    var activo = btn.classList.toggle('active');
+    btn.setAttribute('aria-pressed', activo ? 'true' : 'false');
+    fcLuego(onclick);
+  };
   return btn;
 }
 
@@ -749,7 +769,7 @@ function fcRenderActivos(lista) {
     b.className = 'fc-pill';
     b.setAttribute('aria-label', 'Quitar filtro: ' + it.label);
     b.innerHTML = fcEsc(it.label) + ' <i class="fa-solid fa-xmark" aria-hidden="true"></i>';
-    b.onclick = function(e) { e.stopPropagation(); it.quitar(); fcApply(); };
+    b.onclick = function(e) { e.stopPropagation(); b.style.visibility = 'hidden'; fcLuego(function() { it.quitar(); fcApply(); }); };
     wrap.appendChild(b);
   });
 }
@@ -985,7 +1005,7 @@ window.fcClearAll = function(e) {
   fcState.texto = '';
   document.getElementById('fc-texto').value = '';
   fcSetFechas('', '');
-  fcApply();
+  fcLuego(fcApply);
 };
 
 /* ─── INIT ─── */
@@ -1002,9 +1022,12 @@ function fcInit() {
     tTexto = setTimeout(function() { fcState.texto = inTexto.value.trim(); fcApply(); }, 200);
   });
   document.getElementById('fc-orden').addEventListener('change', function() {
-    fcState.orden = this.value;
-    fcOrdenar();
-    fcApply();
+    var orden = this.value;
+    fcLuego(function() {
+      fcState.orden = orden;
+      fcOrdenar();
+      fcApply();
+    });
   });
 
   // Restaurar: primero el enlace (#filtros?...), si no, lo guardado en este listado
@@ -1085,7 +1108,7 @@ if (!__fcListadosSkip) try {
       }
     });
 
-    // Chips: aria-pressed sincronizado con la clase .active (los chips se re-renderizan)
+    // Chips: aria-pressed inicial (los que crea fcChip ya lo traen)
     var syncChips = function () {
       wrap.querySelectorAll('.fc-chip').forEach(function (c) {
         var on = c.classList.contains('active') ? 'true' : 'false';
@@ -1094,7 +1117,7 @@ if (!__fcListadosSkip) try {
       });
     };
     syncChips();
-    new MutationObserver(syncChips).observe(wrap, { subtree: true, childList: true, attributes: true, attributeFilter: ['class'] });
+    // (sin MutationObserver: fcChip ya crea cada chip con aria-pressed y lo actualiza al tocarlo)
 
     // Resultado del filtrado anunciado a lectores de pantalla
     var sum = document.getElementById('fc-bar-summary');
@@ -1103,8 +1126,8 @@ if (!__fcListadosSkip) try {
 
   // Botones de favorito: nombre accesible según el estado (0 sin marcar, 1 favorito, 2 ya participé)
   var ETQ = ['Guardar en favoritos', 'Marcado como favorito. Pulsar para marcar como ya participé', 'Marcado como ya participé. Pulsar para desmarcar'];
-  function favLabels() {
-    document.querySelectorAll('button.btn-fav').forEach(function (b) {
+  function favLabels(soloEste) {
+    (soloEste ? [soloEste] : document.querySelectorAll('button.btn-fav')).forEach(function (b) {
       var e = 0;
       try { e = parseInt(localStorage.getItem('fav_' + b.getAttribute('data-id')) || '0', 10) || 0; } catch (x) {}
       var res = (e === 2 && typeof fcResNombre === 'function') ? fcResNombre(b.getAttribute('data-id')) : '';
@@ -1115,7 +1138,8 @@ if (!__fcListadosSkip) try {
     });
   }
   document.addEventListener('click', function (e) {
-    if (e.target.closest && e.target.closest('button.btn-fav')) setTimeout(favLabels, 0);
+    var btn = e.target.closest ? e.target.closest('button.btn-fav') : null;
+    if (btn) setTimeout(function () { favLabels(btn); }, 0);
   });
 
   function boot() { enhance(); favLabels(); }

@@ -307,19 +307,26 @@ try {
     }
   }
 
-  var observer = new MutationObserver(function() {
-      var link = document.querySelector('.link-agendar');
-      if (link && !link.hasAttribute('data-badge')) {
-          idle(function() { initBadge(link); });
-          observer.disconnect();
-      }
-  });
-  observer.observe(document.body, { childList: true, subtree: true });
-
-  // chequeo inicial por si ya está en el DOM al cargar el script
+  // Una sola inicialización: si el enlace ya está en el HTML (lo normal en las fichas)
+  // no se observa el DOM; si no, se observa hasta que aparezca y se desconecta.
+  var badgeLanzado = false;
+  function lanzarBadge(link) {
+      if (badgeLanzado) return;
+      badgeLanzado = true;
+      idle(function() { initBadge(link); });
+  }
   var linkInicial = document.querySelector('.link-agendar');
   if (linkInicial) {
-      idle(function() { initBadge(linkInicial); });
+      lanzarBadge(linkInicial);
+  } else {
+      var observer = new MutationObserver(function() {
+          var link = document.querySelector('.link-agendar');
+          if (link && !link.hasAttribute('data-badge')) {
+              observer.disconnect();
+              lanzarBadge(link);
+          }
+      });
+      observer.observe(document.body, { childList: true, subtree: true });
   }
 
 })();
