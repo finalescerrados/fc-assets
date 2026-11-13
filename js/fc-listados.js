@@ -1037,15 +1037,16 @@ window.fcClearAll = function(e) {
 };
 
 /* ─── IR A LOS RESULTADOS ───
-   Baja al primer concurso visible (en el orden actual) y cierra el panel. */
-function fcIrAResultados() {
+   Baja al primer concurso visible (en el orden actual) y cierra el panel.
+   Con teclado, además lleva el foco al título de ese concurso. */
+function fcIrAResultados(conTeclado) {
   var cont = document.getElementById('fc-ordenados');
   var primera = (cont || fcListaParent || document).querySelector('.recuadro[id]:not(.fc-hidden)');
   if (!primera) return;
   if (fcPanelOpen) fcTogglePanel();
   requestAnimationFrame(function() {
     primera.scrollIntoView({ behavior: 'smooth', block: 'start' });
-    var tit = primera.querySelector('a[id^="bases_"]');
+    var tit = conTeclado && primera.querySelector('a[id^="bases_"]');
     if (tit) { try { tit.focus({ preventScroll: true }); } catch (e) {} }
   });
 }
@@ -1069,7 +1070,7 @@ function fcInit() {
   }
   if (selOrden) selOrden.value = fcState.orden;
   var verRes = document.getElementById('fc-ver-res');
-  if (verRes) verRes.addEventListener('click', function(e) { e.stopPropagation(); fcIrAResultados(); });
+  if (verRes) verRes.addEventListener('click', function(e) { e.stopPropagation(); fcIrAResultados(e.detail === 0); });
 
   // Búsqueda por texto (con una pequeña espera entre teclas) y orden
   var inTexto = document.getElementById('fc-texto'), tTexto = null;
