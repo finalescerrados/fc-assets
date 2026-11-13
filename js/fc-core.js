@@ -1,7 +1,7 @@
 /*! finalescerrados.com · fc-core.js · fc-assets v10.18 · JS común a todas las páginas (antes inline en el tema).
    Cada sentencia ejecutable va en su propio try/catch: si un bloque falla, los demás siguen corriendo. */
 
-/* ── bloque 1/24 · antes en el tema: La posición del toast-container es fija por CSS (según altura de la ba ── */
+/* ── bloque 1/25 · antes en el tema: La posición del toast-container es fija por CSS (según altura de la ba ── */
 //
 // La posición del toast-container es fija por CSS (según altura de la barra anchor-ad
 // por breakpoint: mobile 110px / tablet 100px / desktop 130px). No hace falta medir
@@ -54,7 +54,7 @@ window.mostrarToast = function(mensaje, tipo, destino) {
 } catch (e) { console.error('[fc-core.js bloque 1]', e); }
 //
 
-/* ── bloque 2/24 · antes en el tema: let customshare_url  ''; ── */
+/* ── bloque 2/25 · antes en el tema: let customshare_url  ''; ── */
 //
 let customshare_url = '';
 let customshare_title = '';
@@ -127,7 +127,7 @@ document.addEventListener('click', function(event) {
 } catch (e) { console.error('[fc-core.js bloque 2]', e); }
 //
 
-/* ── bloque 3/24 · antes en el tema: document.addEventListener('DOMContentLoaded', function() { ── */
+/* ── bloque 3/25 · antes en el tema: document.addEventListener('DOMContentLoaded', function() { ── */
   try {
 document.addEventListener('DOMContentLoaded', function() {
     let ipzScriptLoaded = false;
@@ -189,7 +189,7 @@ document.addEventListener('DOMContentLoaded', function() {
   });
 } catch (e) { console.error('[fc-core.js bloque 3]', e); }
 
-/* ── bloque 4/24 · antes en el tema: (function () { ── */
+/* ── bloque 4/25 · antes en el tema: (function () { ── */
 //
 try {
 (function () {
@@ -749,7 +749,7 @@ try {
 } catch (e) { console.error('[fc-core.js bloque 4]', e); }
 //
 
-/* ── bloque 5/24 · antes en el tema: TOAST RECORDATORIO DE CONCURSOS POR VENCER ── */
+/* ── bloque 5/25 · antes en el tema: TOAST RECORDATORIO DE CONCURSOS POR VENCER ── */
 //
 // TOAST RECORDATORIO DE CONCURSOS POR VENCER
 try {
@@ -865,7 +865,7 @@ idle(actualizarFavBadge);
 } catch (e) { console.error('[fc-core.js bloque 5]', e); }
 //
 
-/* ── bloque 6/24 · antes en el tema: FUNCIONES PARA PÁGINA INDIVIDUAL DE CONCURSOS ── */
+/* ── bloque 6/25 · antes en el tema: FUNCIONES PARA PÁGINA INDIVIDUAL DE CONCURSOS ── */
 //
 // ====== FUNCIONES PARA PÁGINA INDIVIDUAL DE CONCURSOS ======
 
@@ -1230,7 +1230,7 @@ if (document.readyState === 'loading') {
 }
 //
 
-/* ── bloque 7/24 · antes en el tema: RELATED POSTS ── */
+/* ── bloque 7/25 · antes en el tema: RELATED POSTS ── */
 //
 // ====== RELATED POSTS ======
 try {
@@ -1347,7 +1347,7 @@ try {
 } catch (e) { console.error('[fc-core.js bloque 7]', e); }
 //
 
-/* ── bloque 8/24 · antes en el tema: Schema markup para SEO con dateModified real ── */
+/* ── bloque 8/25 · antes en el tema: Schema markup para SEO con dateModified real ── */
 //
 // ====== Schema markup para SEO con dateModified real ======
 try {
@@ -1530,7 +1530,7 @@ try {
 } catch (e) { console.error('[fc-core.js bloque 8]', e); }
 //
 
-/* ── bloque 9/24 · antes en el tema: TABLA DE CONTENIDOS (h2 + h3 con indentación) ── */
+/* ── bloque 9/25 · antes en el tema: TABLA DE CONTENIDOS (h2 + h3 con indentación) ── */
 //
 // ====== TABLA DE CONTENIDOS (h2 + h3 con indentación) ======
 try {
@@ -1605,7 +1605,7 @@ try {
 } catch (e) { console.error('[fc-core.js bloque 9]', e); }
 //
 
-/* ── bloque 10/24 · antes en el tema: document.addEventListener('DOMContentLoaded', function() { ── */
+/* ── bloque 10/25 · antes en el tema: document.addEventListener('DOMContentLoaded', function() { ── */
 //
 try {
 document.addEventListener('DOMContentLoaded', function() {
@@ -1649,7 +1649,7 @@ document.addEventListener('DOMContentLoaded', function() {
 } catch (e) { console.error('[fc-core.js bloque 10]', e); }
 //
 
-/* ── bloque 11/24 · antes en el tema: Google Preferred Sources: carga 100% bajo demanda, cero costo hasta qu ── */
+/* ── bloque 11/25 · antes en el tema: Google Preferred Sources: carga 100% bajo demanda, cero costo hasta qu ── */
 //
 // Google Preferred Sources: carga 100% bajo demanda, cero costo hasta que
 // el usuario interactúa con el ícono. Nada de script en el load de la página.
@@ -1710,7 +1710,7 @@ try {
 } catch (e) { console.error('[fc-core.js bloque 11]', e); }
 //
 
-/* ── bloque 12/24 · antes en el tema (v10.18): function fxCopyReferencia(e) { ── */
+/* ── bloque 12/25 · antes en el tema (v10.18): function fxCopyReferencia(e) { ── */
 function fxCopyReferencia(e) {
   var referencia = document.getElementById("referencia");
   var texto = referencia.innerHTML;
@@ -1733,7 +1733,7 @@ function fxCopyReferencia(e) {
   return false;
 }
 
-/* ── bloque 13/24 · antes en el tema (v10.18): window.addEventListener('load', function() { · solo si: /^\/p\//.test(location.pathname) ── */
+/* ── bloque 13/25 · antes en el tema (v10.18): window.addEventListener('load', function() { · solo si: /^\/p\//.test(location.pathname) ── */
 //
 if (/^\/p\//.test(location.pathname)) try {
 window.addEventListener('load', function() {
@@ -1873,7 +1873,7 @@ window.addEventListener('load', function() {
 } catch (e) { console.error('[fc-core.js bloque 13]', e); }
 //
 
-/* ── bloque 14/24 · antes en el tema (v10.18): window.addEventListener('load', function() { · solo si: (/^\/\d{4}\/\d{2}\/.+\.html$/.test(location.pathname) || /^\/p\//.test(location.pathname)) ── */
+/* ── bloque 14/25 · antes en el tema (v10.18): window.addEventListener('load', function() { · solo si: (/^\/\d{4}\/\d{2}\/.+\.html$/.test(location.pathname) || /^\/p\//.test(location.pathname)) ── */
 //
 if ((/^\/\d{4}\/\d{2}\/.+\.html$/.test(location.pathname) || /^\/p\//.test(location.pathname))) try {
 window.addEventListener('load', function() {
@@ -1932,7 +1932,7 @@ window.addEventListener('load', function() {
 } catch (e) { console.error('[fc-core.js bloque 14]', e); }
 //
 
-/* ── bloque 15/24 · antes en el tema (v10.18): (function () { ── */
+/* ── bloque 15/25 · antes en el tema (v10.18): (function () { ── */
 //
 try {
 (function () {
@@ -1999,7 +1999,7 @@ if (document.readyState === 'loading') document.addEventListener('DOMContentLoad
 } catch (e) { console.error('[fc-core.js bloque 15]', e); }
 //
 
-/* ── bloque 16/24 · antes en el tema (v10.18): (function() { · solo si: !!document.getElementById('comment-holder') ── */
+/* ── bloque 16/25 · antes en el tema (v10.18): (function() { · solo si: !!document.getElementById('comment-holder') ── */
     //
     if (!!document.getElementById('comment-holder')) try {
 (function() {
@@ -2245,9 +2245,9 @@ if (document.readyState === 'loading') document.addEventListener('DOMContentLoad
 } catch (e) { console.error('[fc-core.js bloque 16]', e); }
     //
 
-/* ── bloque 17/24 · eliminado en v10.22: el desplegable de redes del header ahora es un popover nativo del tema (sin JS) ── */
+/* ── bloque 17/25 · eliminado en v10.22: el desplegable de redes del header ahora es un popover nativo del tema (sin JS) ── */
 
-/* ── bloque 18/24 · antes en el tema (v10.18): (function() { ── */
+/* ── bloque 18/25 · antes en el tema (v10.18): (function() { ── */
 try {
 (function() {
   var defaultAvatar = 'https://www.blogger.com/img/blogger_logo_round_35.png';
@@ -2275,7 +2275,7 @@ try {
 })();
 } catch (e) { console.error('[fc-core.js bloque 18]', e); }
 
-/* ── bloque 19/24 · antes en el tema (v10.18): (function() { · solo si: (/^\/\d{4}\/\d{2}\/.+\.html$/.test(location.pathname) || /^\/p\/cl-/.test(location.pathname)) ── */
+/* ── bloque 19/25 · antes en el tema (v10.18): (function() { · solo si: (/^\/\d{4}\/\d{2}\/.+\.html$/.test(location.pathname) || /^\/p\/cl-/.test(location.pathname)) ── */
 //
 if ((/^\/\d{4}\/\d{2}\/.+\.html$/.test(location.pathname) || /^\/p\/cl-/.test(location.pathname))) try {
 (function() {
@@ -2359,7 +2359,7 @@ if ((/^\/\d{4}\/\d{2}\/.+\.html$/.test(location.pathname) || /^\/p\/cl-/.test(lo
 } catch (e) { console.error('[fc-core.js bloque 19]', e); }
 //
 
-/* ── bloque 20/24 · antes en el tema (v10.18): (function() { ── */
+/* ── bloque 20/25 · antes en el tema (v10.18): (function() { ── */
 //
 try {
 (function() {
@@ -2387,7 +2387,7 @@ try {
 } catch (e) { console.error('[fc-core.js bloque 20]', e); }
 //
 
-/* ── bloque 21/24 · antes en el tema (v10.18): BARRA DE PROGRESO DE LECTURA ── */
+/* ── bloque 21/25 · antes en el tema (v10.18): BARRA DE PROGRESO DE LECTURA ── */
 //
 // ====== BARRA DE PROGRESO DE LECTURA ======
 try {
@@ -2429,7 +2429,7 @@ document.addEventListener('DOMContentLoaded', function() {
 } catch (e) { console.error('[fc-core.js bloque 21]', e); }
 //
 
-/* ── bloque 22/24 · antes en el tema (v10.18): TOAST NOTIFICACIÓN DE NUEVAS ENTRADAS ── */
+/* ── bloque 22/25 · antes en el tema (v10.18): TOAST NOTIFICACIÓN DE NUEVAS ENTRADAS ── */
 //
 // TOAST NOTIFICACIÓN DE NUEVAS ENTRADAS
 try {
@@ -2463,7 +2463,7 @@ window.addEventListener('load', function() {
 } catch (e) { console.error('[fc-core.js bloque 22]', e); }
 //
 
-/* ── bloque 23/24 · antes en el tema (v10.18): Delay menu close ── */
+/* ── bloque 23/25 · antes en el tema (v10.18): Delay menu close ── */
 //Delay menu close
 try {
 (function() {
@@ -2497,7 +2497,7 @@ try {
 })();
 } catch (e) { console.error('[fc-core.js bloque 23]', e); }
 
-/* ── bloque 24/24 · UTM en enlaces a terceros de las páginas de concursos ── */
+/* ── bloque 24/25 · UTM en enlaces a terceros de las páginas de concursos ── */
 try {
 (function () {
   'use strict';
@@ -2550,6 +2550,44 @@ try {
   window.fcConUtm = conUtm;   // para probar desde la consola
 })();
 } catch (e) { console.error('[fc-core.js bloque 24]', e); }
+
+/* ── bloque 25/25 · anuncios sin relleno: se cierra el hueco reservado ──
+   Los .ad-reservado del contenido reservan 280px (CSS crítico) para que el anuncio no empuje el texto.
+   Si AdSense no tiene anuncio (data-ad-status="unfilled"), el hueco queda vacío: se cierra
+   (clase fc-ad-vacio) solo si está debajo de la pantalla, para no mover nada de lo que se está viendo.
+   Si está a la vista, se espera a que salga por abajo; si quedó arriba (ya se pasó), se deja como está. */
+try {
+(function () {
+  if (!('MutationObserver' in window)) return;
+  var esperando = ('IntersectionObserver' in window) ? new IntersectionObserver(function (es) {
+    es.forEach(function (e) {
+      var alto = e.rootBounds ? e.rootBounds.bottom : window.innerHeight;
+      if (!e.isIntersecting && e.boundingClientRect.top >= alto) {
+        esperando.unobserve(e.target);
+        e.target.classList.add('fc-ad-vacio');
+      }
+    });
+  }) : null;
+  function revisar(ins) {
+    var wrap = ins.closest && ins.closest('.ad-reservado');
+    if (!wrap) return;
+    if (ins.getAttribute('data-ad-status') !== 'unfilled') {   // llegó un anuncio después: se vuelve a mostrar
+      wrap.classList.remove('fc-ad-vacio');
+      if (esperando) esperando.unobserve(wrap);
+      return;
+    }
+    if (wrap.classList.contains('fc-ad-vacio')) return;
+    if (wrap.getBoundingClientRect().top >= window.innerHeight) wrap.classList.add('fc-ad-vacio');
+    else if (esperando) esperando.observe(wrap);
+  }
+  new MutationObserver(function (ms) {
+    ms.forEach(function (m) {
+      if (m.target.classList && m.target.classList.contains('adsbygoogle')) revisar(m.target);
+    });
+  }).observe(document.documentElement, { subtree: true, attributes: true, attributeFilter: ['data-ad-status'] });
+  document.querySelectorAll('.ad-reservado ins.adsbygoogle[data-ad-status]').forEach(revisar);
+})();
+} catch (e) { console.error('[fc-core.js bloque 25]', e); }
 
 /* ── clics que llegaron antes de que cargara este archivo (los guarda el stub inline del tema) ── */
 if (window.fcFlushQ) { try { window.fcFlushQ(); } catch (e) { console.error(e); } }

@@ -6,6 +6,22 @@
 var __fcListadosSkip = !document.getElementById('fc-filtros-wrap') || (typeof window.fcApply === 'function' && !window.fcApply.__fcStub);
 
 /* ── bloque 1/4 · ocultar/mostrar detalles (fxHide) ── */
+/* Ícono del botón: ojo tachado = ocultar, ojo = volver a mostrar. Las páginas generadas
+   antes de v10.23 traen la X (fa-circle-xmark), que se sigue rotando como siempre. */
+function fcIconoOcultar(el, oculto) {
+  var i = el.querySelector('i');
+  if (!i) return;
+  if (i.classList.contains('fa-eye-slash') || i.classList.contains('fa-eye')) {
+    i.classList.toggle('fa-eye-slash', !oculto);
+    i.classList.toggle('fa-eye', oculto);
+    el.title = oculto ? 'Volver a mostrar este concurso' : 'Ocultar este concurso';
+    el.setAttribute('aria-label', el.title);
+    el.setAttribute('aria-pressed', oculto ? 'true' : 'false');
+  } else {
+    el.title = oculto ? 'Mostrar detalles' : 'Ocultar detalles';
+    i.style.transform = oculto ? 'rotate(45deg)' : 'rotate(0deg)';
+  }
+}
 function fxHide(el) {
   var id = el.getAttribute('data-id');
   var cont = document.getElementById(id);
@@ -23,16 +39,14 @@ function fxHide(el) {
     // Mostrar detalles
     details.style.display = '';
     localStorage.setItem(key, '0');
-    el.title = 'Ocultar detalles';
-    el.querySelector('i').style.transform = 'rotate(0deg)';
+    fcIconoOcultar(el, false);
     if (title) title.style.textDecoration = '';
     mostrarToast('Detalles visibles','info');
   } else {
     // Ocultar detalles
     details.style.display = 'none';
     localStorage.setItem(key, '1');
-    el.title = 'Mostrar detalles';
-    el.querySelector('i').style.transform = 'rotate(45deg)';
+    fcIconoOcultar(el, true);
     if (title) title.style.textDecoration = 'line-through';
     mostrarToast('Detalles ocultos','info');
   }
@@ -53,12 +67,10 @@ document.addEventListener('DOMContentLoaded', function () {
 
     if (localStorage.getItem('hide_details_' + id) === '1') {
       details.style.display = 'none';
-      el.title = 'Mostrar detalles';
-      el.querySelector('i').style.transform = 'rotate(45deg)';
+      fcIconoOcultar(el, true);
       if (title) title.style.textDecoration = 'line-through';
     } else {
-      el.title = 'Ocultar detalles';
-      el.querySelector('i').style.transform = 'rotate(0deg)';
+      fcIconoOcultar(el, false);
     }
   });
 });
@@ -255,7 +267,11 @@ if (!__fcListadosSkip) try {
 
 /* ─── ESTADO ─── */
 var FC_KEY = 'fc_filtros2:' + window.location.pathname;
-try { localStorage.removeItem('fc_filtros:' + window.location.pathname); } catch(e) {}
+/* v10.23: los filtros se guardan en sessionStorage (solo mientras dura la visita); se borra lo que quedó en localStorage */
+try { localStorage.removeItem('fc_filtros:' + window.location.pathname); localStorage.removeItem(FC_KEY); } catch(e) {}
+/* Orden con el que arranca la página: Populares trae data-defecto="popular"; el resto, por fecha de cierre */
+var FC_ORDEN_DEF = (function() { var s = document.getElementById('fc-orden'); return (s && s.getAttribute('data-defecto')) || 'cierre'; })();
+var FC_ORDENES = ['cierre', 'popular', 'nuevos', 'premio'];
 
 var fcState = {
   generos:      new Set(),
@@ -269,7 +285,7 @@ var fcState = {
   soloAbiertos: false,
   miPais:       false,
   texto:        '',
-  orden:        'cierre'
+  orden:        FC_ORDEN_DEF
 };
 var fcPanelOpen  = false;
 var fcGroupsOpen = { fecha: false, genero: false, premio: false, pais: false, participacion: false, envio: false };
@@ -438,6 +454,7 @@ function fcExtract() {
     var c = {
       card: card,
       idx: out.length,
+      pop: parseInt(card.getAttribute('data-pop'), 10) || Infinity,
       nuevo: !!card.querySelector('.novedad-icon'),
       texto: fcNorm(card.textContent),
       isoDate: p.length === 3 ? p[2] + '-' + p[1] + '-' + p[0] : '',
@@ -554,12 +571,14 @@ function fcOrdenar() {
     cont = document.createElement('div');
     cont.id = 'fc-ordenados';
     // Debajo de la primera cabecera (que conserva el anuncio y el separador)
-    var raiz = document.getElementById('mes-0');
+    var raiz = fcListaParent.querySelector('.fc-mes') || document.getElementById('mes-0');
     while (raiz && raiz.parentNode !== fcListaParent) raiz = raiz.parentNode;
     fcListaParent.insertBefore(cont, raiz ? raiz.nextSibling : fcData[0].marca);
   }
   var cmp = fcState.orden === 'nuevos'
     ? function(a, b) { return (b.nuevo - a.nuevo) || (a.idx - b.idx); }
+    : fcState.orden === 'popular'
+    ? function(a, b) { return (a.pop === b.pop ? 0 : (a.pop < b.pop ? -1 : 1)) || (a.idx - b.idx); }
     : function(a, b) { return (b.premioEur - a.premioEur) || (a.idx - b.idx); };
   fcData.slice().sort(cmp).forEach(function(c) { cont.appendChild(c.card); });
 }
@@ -781,7 +800,7 @@ function fcSerializar() {
   if (fcState.soloAbiertos) qs.set('a', '1');
   if (fcState.miPais) qs.set('mp', '1');
   if (fcState.texto) qs.set('t', fcState.texto);
-  if (fcState.orden !== 'cierre') qs.set('o', fcState.orden);
+  if (fcState.orden !== FC_ORDEN_DEF) qs.set('o', fcState.orden);
   if (fcState.dateFrom) qs.set('df', fcState.dateFrom);
   if (fcState.dateTo)   qs.set('dt', fcState.dateTo);
   return qs.toString();
@@ -795,7 +814,7 @@ function fcCargar(qs) {
   fcState.miPais = qs.get('mp') === '1';
   fcState.texto = qs.get('t') || '';
   document.getElementById('fc-texto').value = fcState.texto;
-  fcState.orden = ['nuevos', 'premio'].indexOf(qs.get('o')) !== -1 ? qs.get('o') : 'cierre';
+  fcState.orden = FC_ORDENES.indexOf(qs.get('o')) !== -1 ? qs.get('o') : FC_ORDEN_DEF;
   document.getElementById('fc-orden').value = fcState.orden;
   fcSetFechas(qs.get('df') || '', qs.get('dt') || '');
 }
@@ -803,7 +822,7 @@ function fcHashActual() {
   return window.location.hash.indexOf('#filtros?') === 0 ? window.location.hash.slice(9) : null;
 }
 function fcGuardar(qs) {
-  try { if (qs) localStorage.setItem(FC_KEY, qs); else localStorage.removeItem(FC_KEY); } catch(e) {}
+  try { if (qs) sessionStorage.setItem(FC_KEY, qs); else sessionStorage.removeItem(FC_KEY); } catch(e) {}
   try {
     var base = window.location.pathname + window.location.search;
     if (qs) history.replaceState(history.state, '', base + '#filtros?' + qs);
@@ -850,7 +869,8 @@ window.fcApply = function() {
   var children = Array.prototype.slice.call(parent.childNodes);
 
   function esCabeceraMes(node) {
-    return node.nodeType === 1 && node.querySelector && !!node.querySelector('h2[id^="mes-"]');
+    return node.nodeType === 1 && node.querySelector &&
+      ((node.classList && node.classList.contains('fc-mes')) || !!node.querySelector('h2[id^="mes-"]'));
   }
 
   var secciones = [];
@@ -880,7 +900,7 @@ window.fcApply = function() {
     var tieneVisible  = recuadrosVisibles.length > 0;
     var ultimoVisible = tieneVisible ? recuadrosVisibles[recuadrosVisibles.length - 1] : null;
 
-    var titulo = sec.header.querySelector('h2:not([id])');
+    var titulo = sec.header.querySelector('h2.fc-mes-tit') || sec.header.querySelector('h2:not([id])');
     var separador = sec.header.querySelector('hr.divider');
     if (iSec === 0) {
       sec.header.style.display = '';
@@ -906,6 +926,14 @@ window.fcApply = function() {
       node.style.display = (prevVisible && prev !== ultimoVisible) ? '' : 'none';
     });
   });
+
+  // botón para bajar a los resultados (con el panel abierto quedan lejos)
+  var verRes = document.getElementById('fc-ver-res');
+  if (verRes) {
+    verRes.hidden = visible === 0;
+    var verTxt = document.getElementById('fc-ver-res-txt');
+    if (verTxt) verTxt.textContent = visible === 1 ? 'Ver el concurso' : 'Ver ' + visible + ' concursos';
+  }
 
   // conteo resultado
   var countEl = document.getElementById('fc-result-count');
@@ -1008,12 +1036,40 @@ window.fcClearAll = function(e) {
   fcLuego(fcApply);
 };
 
+/* ─── IR A LOS RESULTADOS ───
+   Baja al primer concurso visible (en el orden actual) y cierra el panel. */
+function fcIrAResultados() {
+  var cont = document.getElementById('fc-ordenados');
+  var primera = (cont || fcListaParent || document).querySelector('.recuadro[id]:not(.fc-hidden)');
+  if (!primera) return;
+  if (fcPanelOpen) fcTogglePanel();
+  requestAnimationFrame(function() {
+    primera.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    var tit = primera.querySelector('a[id^="bases_"]');
+    if (tit) { try { tit.focus({ preventScroll: true }); } catch (e) {} }
+  });
+}
+
 /* ─── INIT ─── */
 function fcInit() {
   fcData = fcExtract();
   fcListaParent = fcData.length ? fcData[0].card.parentNode : null;
   fcCalcularOrden();
   fcMarcarPaginador();
+
+  // "Más populares" solo si las tarjetas traen su puesto (los archivados y las páginas viejas no)
+  var selOrden = document.getElementById('fc-orden');
+  var hayPop = fcData.some(function(c) { return c.pop !== Infinity; });
+  if (!hayPop) {
+    var optPop = selOrden && selOrden.querySelector('option[value="popular"]');
+    if (optPop) optPop.parentNode.removeChild(optPop);
+    FC_ORDENES = FC_ORDENES.filter(function(o) { return o !== 'popular'; });
+    if (FC_ORDEN_DEF === 'popular') FC_ORDEN_DEF = 'cierre';
+    if (fcState.orden === 'popular') fcState.orden = 'cierre';
+  }
+  if (selOrden) selOrden.value = fcState.orden;
+  var verRes = document.getElementById('fc-ver-res');
+  if (verRes) verRes.addEventListener('click', function(e) { e.stopPropagation(); fcIrAResultados(); });
 
   // Búsqueda por texto (con una pequeña espera entre teclas) y orden
   var inTexto = document.getElementById('fc-texto'), tTexto = null;
@@ -1032,15 +1088,15 @@ function fcInit() {
 
   // Restaurar: primero el enlace (#filtros?...), si no, lo guardado en este listado
   var qs = fcHashActual();
-  if (qs === null) { try { qs = localStorage.getItem(FC_KEY); } catch(e) { qs = null; } }
+  if (qs === null) { try { qs = sessionStorage.getItem(FC_KEY); } catch(e) { qs = null; } }
   if (qs) {
     fcCargar(new URLSearchParams(qs));
     if (fcActivos().length) {
       fcPanelOpen = true;
       document.getElementById('fc-filtros-wrap').classList.add('open');
     }
-    fcOrdenar();
   }
+  if (qs || fcState.orden !== 'cierre') fcOrdenar();
   fcApply();
   fcDetectarPais();
   fcSticky();
