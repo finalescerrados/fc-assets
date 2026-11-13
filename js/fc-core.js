@@ -2245,35 +2245,7 @@ if (document.readyState === 'loading') document.addEventListener('DOMContentLoad
 } catch (e) { console.error('[fc-core.js bloque 16]', e); }
     //
 
-/* ── bloque 17/24 · antes en el tema (v10.18): document.addEventListener('DOMContentLoaded', function() { ── */
-//
-try {
-document.addEventListener('DOMContentLoaded', function() {
-  var items = document.querySelectorAll('ul.sn li');
-  items.forEach(function(li, i) { li.style.display = i < 4 ? '' : 'none'; });
-
-  var ul = document.querySelector('ul.sn');
-  if (!ul) return;
-  var toggle = document.createElement('li');
-  toggle.style.fontSize = '18px';
-  toggle.innerHTML = '<span class="fa-solid fa-caret-left" style="color:#bebebe !important"></span><span class="less" style="color:#bebebe !important;display:none"><i class="fa-solid fa-caret-right"></i></span>';
-  ul.appendChild(toggle);
-
-  toggle.addEventListener('click', function() {
-    var siblings = ul.querySelectorAll('li:not(:last-child)');
-    siblings.forEach(function(li, i) {
-      if (i > 0) li.style.display = li.style.display === 'none' ? '' : 'none';
-    });
-    var spans = toggle.querySelectorAll('span');
-    spans.forEach(function(s) {
-      s.style.display = s.style.display === 'none' ? 'inline' : 'none';
-    });
-  });
-
-  document.getElementById('SocialTable').style.display = 'block';
-});
-} catch (e) { console.error('[fc-core.js bloque 17]', e); }
-//
+/* ── bloque 17/24 · eliminado en v10.22: el desplegable de redes del header ahora es un popover nativo del tema (sin JS) ── */
 
 /* ── bloque 18/24 · antes en el tema (v10.18): (function() { ── */
 try {
