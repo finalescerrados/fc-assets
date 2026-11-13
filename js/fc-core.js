@@ -927,17 +927,24 @@ function leerRespaldoCookie() {
 
 // Función para sincronizar cookie con localStorage
 function actualizarCookie() {
-  var favs = [], parts = [], fechas = [];
+  var favs = [], parts = [], fechas = [], conFecha = [];
   try {
     for (var i = 0; i < localStorage.length; i++) {
       var k = localStorage.key(i);
       if (k.indexOf('fav_fecha_') === 0) {
-        fechas.push(k.slice(10) + ':' + String(localStorage.getItem(k)).replace(/-/g, ''));
+        conFecha.push(k.slice(10));
       } else if (k.indexOf('fav_') === 0) {
         var e = parseInt(localStorage.getItem(k), 10), id = k.slice(4);
         if (e === 1) favs.push(id); else if (e === 2) parts.push(id);
       }
     }
+    // Solo van a la cookie las fechas de concursos guardados; las de los desmarcados se borran
+    // (si no, la cookie las vuelve a crear en cada carga y ocupan el lugar de las fechas reales)
+    conFecha.forEach(function(id) {
+      if (favs.indexOf(id) !== -1 || parts.indexOf(id) !== -1)
+        fechas.push(id + ':' + String(localStorage.getItem('fav_fecha_' + id)).replace(/-/g, ''));
+      else localStorage.removeItem('fav_fecha_' + id);
+    });
   } catch(e) { return; }
   var base = '2_' + favs.join('.') + '_' + parts.join('.') + '_';
   if (base.length > FC_COOKIE_MAX) return; // no pisar la cookie con algo truncado
