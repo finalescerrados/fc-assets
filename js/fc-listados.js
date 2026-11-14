@@ -838,8 +838,9 @@ function fcGuardar(qs) {
   });
 }
 function fcMarcarPaginador() {
+  // SIGUIENTE / ANTERIOR del pie y el enlace de la nota de página ("…sigue en la página 2")
   document.querySelectorAll('.post a[href*="/p/concursos"]').forEach(function(a) {
-    if (!/^(siguiente|anterior)$/i.test(a.textContent.trim())) return;
+    if (!/^(siguiente|anterior)$/i.test(a.textContent.trim()) && !a.closest('.fc-pag-nota')) return;
     if (a.closest('#fc-filtros-wrap, #fc-empty-state')) return;
     a.classList.add('fc-pager');
     a.setAttribute('data-base', a.href.split('#')[0]);
@@ -930,14 +931,6 @@ window.fcApply = function() {
       node.style.display = (prevVisible && prev !== ultimoVisible) ? '' : 'none';
     });
   });
-
-  // botón para bajar a los resultados (con el panel abierto quedan lejos)
-  var verRes = document.getElementById('fc-ver-res');
-  if (verRes) {
-    verRes.hidden = visible === 0;
-    var verTxt = document.getElementById('fc-ver-res-txt');
-    if (verTxt) verTxt.textContent = visible === 1 ? 'Ver el concurso' : 'Ver ' + visible + ' concursos';
-  }
 
   // conteo resultado
   var countEl = document.getElementById('fc-result-count');
@@ -1040,21 +1033,6 @@ window.fcClearAll = function(e) {
   fcLuego(fcApply);
 };
 
-/* ─── IR A LOS RESULTADOS ───
-   Baja al primer concurso visible (en el orden actual) y cierra el panel.
-   Con teclado, además lleva el foco al título de ese concurso. */
-function fcIrAResultados(conTeclado) {
-  var cont = document.getElementById('fc-ordenados');
-  var primera = (cont || fcListaParent || document).querySelector('.recuadro[id]:not(.fc-hidden)');
-  if (!primera) return;
-  if (fcPanelOpen) fcTogglePanel();
-  requestAnimationFrame(function() {
-    primera.scrollIntoView({ behavior: 'smooth', block: 'start' });
-    var tit = conTeclado && primera.querySelector('a[id^="bases_"]');
-    if (tit) { try { tit.focus({ preventScroll: true }); } catch (e) {} }
-  });
-}
-
 /* ─── INIT ─── */
 function fcInit() {
   fcData = fcExtract();
@@ -1073,8 +1051,6 @@ function fcInit() {
     if (fcState.orden === 'popular') fcState.orden = 'cierre';
   }
   if (selOrden) selOrden.value = fcState.orden;
-  var verRes = document.getElementById('fc-ver-res');
-  if (verRes) verRes.addEventListener('click', function(e) { e.stopPropagation(); fcIrAResultados(e.detail === 0); });
 
   // Búsqueda por texto (con una pequeña espera entre teclas) y orden
   var inTexto = document.getElementById('fc-texto'), tTexto = null;
