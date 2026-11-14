@@ -455,8 +455,11 @@ function fcExtract() {
       card: card,
       idx: out.length,
       pop: parseInt(card.getAttribute('data-pop'), 10) || Infinity,
+      agregado: card.getAttribute('data-agregado') || '',
       nuevo: !!card.querySelector('.novedad-icon'),
-      texto: fcNorm(card.textContent),
+      // el texto recortado de las tarjetas (premio, género, entidad, "Abierto a") se busca completo, desde su title
+      texto: fcNorm(card.textContent + ' ' + Array.prototype.map.call(
+        card.querySelectorAll('.fc-det-txt[title], .fc-para-txt[title]'), function(e) { return e.title; }).join(' ')),
       isoDate: p.length === 3 ? p[2] + '-' + p[1] + '-' + p[0] : '',
       pais: fcPais(agendar.getAttribute('data-pais') || ''),
       generos: [], generoTodos: false, premios: [], abierto: false,
@@ -576,7 +579,8 @@ function fcOrdenar() {
     fcListaParent.insertBefore(cont, raiz ? raiz.nextSibling : fcData[0].marca);
   }
   var cmp = fcState.orden === 'nuevos'
-    ? function(a, b) { return (b.nuevo - a.nuevo) || (a.idx - b.idx); }
+    // por fecha de agregado (data-agregado, AAAA-MM-DD); las páginas viejas, por el ícono de nuevo
+    ? function(a, b) { return (a.agregado === b.agregado ? 0 : (a.agregado < b.agregado ? 1 : -1)) || (b.nuevo - a.nuevo) || (a.idx - b.idx); }
     : fcState.orden === 'popular'
     ? function(a, b) { return (a.pop === b.pop ? 0 : (a.pop < b.pop ? -1 : 1)) || (a.idx - b.idx); }
     : function(a, b) { return (b.premioEur - a.premioEur) || (a.idx - b.idx); };
