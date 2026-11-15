@@ -732,9 +732,9 @@ function renderLists() {
       <div class="fav-linea ${claseV}${estado === 2 ? ' fav-part' : ''}">
         <div class="dayStyle">${d}/${m}<br><small>${y}</small></div>
         <div class="titulo-concurso">
-          <a href="${link}" class="link-nombre">${fcNombreCorto(entry.title.$t)}</a>
+          <a href="${fcEsc(link)}" class="link-nombre">${fcEsc(fcNombreCorto(entry.title.$t))}</a>
           <div class="spacer"></div>
-          <a href="${link}" target="_blank" class="external-link"><i class="fa-solid fa-up-right-from-square"></i></a>
+          <a href="${fcEsc(link)}" target="_blank" class="external-link" aria-label="Abrir en otra pesta\u00f1a" title="Abrir en otra pesta\u00f1a"><i class="fa-solid fa-up-right-from-square" aria-hidden="true"></i></a>
         </div>
         <div class="acciones-linea">${favI}${partI}</div>
         ${resHTML}
@@ -1158,9 +1158,9 @@ if (!__fcFavoritosSkip) try {
         html += '<div class="fav-linea">' +
           dayBlock +
           '<div class="titulo-concurso">' +
-            '<a class="link-nombre" href="' + item.link + '">' + item.titulo + '</a>' +
+            '<a class="link-nombre" href="' + fcEsc(item.link) + '">' + fcEsc(item.titulo) + '</a>' +
             '<div class="spacer"></div>' +
-            '<a href="' + item.link + '" target="_blank" class="external-link"><i class="fa-solid fa-up-right-from-square"></i></a>' +
+            '<a href="' + fcEsc(item.link) + '" target="_blank" class="external-link" aria-label="Abrir en otra pesta\u00f1a" title="Abrir en otra pesta\u00f1a"><i class="fa-solid fa-up-right-from-square" aria-hidden="true"></i></a>' +
           '</div>' +
         '</div>';
       });

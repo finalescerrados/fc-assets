@@ -8,15 +8,44 @@
 // la barra en runtime ni observarla con MutationObserver.
 // destino (opcional): URL o función. Si viene, el toast es clickeable (con flecha ›)
 // y dura un poco más; sin destino se comporta igual que siempre.
+// v10.25: fcAlActivar(fn) corre fn ya, o recién cuando la página pre-renderizada se
+// activa (el visitante la abrió de verdad). Lo usan el contador de vistas, la marca de
+// última visita y los toasts. Sin prerender (o sin soporte) corre en el acto.
 try {
-window.mostrarToast = function(mensaje, tipo, destino) {
-  if (!tipo) tipo = 'info';
+window.fcAlActivar = window.fcAlActivar || function (fn) {
+  if (document.prerendering) {
+    document.addEventListener('prerenderingchange', function () { fn(); }, { once: true });
+  } else {
+    fn();
+  }
+};
+} catch (e) { console.error('[fc-core.js bloque 0]', e); }
+try {
+// v10.25: el contenedor es una región viva (role=status, cortés) para que los lectores
+// de pantalla lean los toasts. Se crea al cargar, vacío: una región que aparece junto con
+// su primer mensaje no siempre se anuncia.
+function fcToastContainer() {
   var container = document.getElementById('toast-container');
   if (!container) {
     container = document.createElement('div');
     container.id = 'toast-container';
     document.body.appendChild(container);
   }
+  if (!container.hasAttribute('role')) {
+    container.setAttribute('role', 'status');
+    container.setAttribute('aria-live', 'polite');
+  }
+  return container;
+}
+if (document.body) fcToastContainer();
+window.mostrarToast = function(mensaje, tipo, destino) {
+  if (document.prerendering) {
+    var args = arguments;
+    window.fcAlActivar(function () { window.mostrarToast.apply(window, args); });
+    return;
+  }
+  if (!tipo) tipo = 'info';
+  var container = fcToastContainer();
 
   var t = document.createElement('div');
   t.className = 'toast ' + tipo;
@@ -475,10 +504,29 @@ try {
     return null;
   }
 
+  // v10.25: el overlay es un <dialog> abierto con showModal(): el navegador deja inerte el
+  // resto de la página, encierra el foco y lo devuelve al cerrar. Con el tema viejo (overlay
+  // <div>) se comporta como antes: solo la clase is-visible.
+  function ocultarOverlay(overlay) {
+    overlay.classList.remove('is-visible');
+    if (overlay.open && typeof overlay.close === 'function') {
+      try { overlay.close(); } catch (e) {}
+    }
+  }
+  // Cierre nativo (Esc o gesto de volver en Android): se registra como cerrar con la X.
+  // cerrarPopup ya sacó is-visible antes de close(), así que no se cuenta dos veces.
+  ['antemeridiano', 'cafe'].forEach(function (tipo) {
+    var o = getOverlay(tipo);
+    if (!o || typeof o.showModal !== 'function') return;
+    o.addEventListener('close', function () {
+      if (o.classList.contains('is-visible')) window.cerrarPopup(tipo);
+    });
+  });
+
   window.cerrarPopup = function (tipo) {
     var overlay = getOverlay(tipo);
     if (!overlay) return;
-    overlay.classList.remove('is-visible');
+    ocultarOverlay(overlay);
     lsSet('fc_popup_dismissed_' + tipo, Date.now());
     fcTrack('popup_cerrado', { tipo: tipo });
   };
@@ -488,7 +536,7 @@ try {
     var count = parseInt(lsGet(keyCount) || '0', 10);
     if (count > 0) lsSet(keyCount, count - 1);
     var overlay = getOverlay(tipo);
-    if (overlay) overlay.classList.remove('is-visible');
+    if (overlay) ocultarOverlay(overlay);
     try { localStorage.removeItem('fc_popup_dismissed_' + tipo); } catch (e) {}
   };
 
@@ -615,8 +663,11 @@ try {
     if (!overlay) return false;
     prepararPopup(overlay);
     overlay.classList.add('is-visible');
+    if (typeof overlay.showModal === 'function' && !overlay.open) {
+      try { overlay.showModal(); } catch (e) {}
+    }
     if (!(overlay.offsetWidth > 0 || overlay.offsetHeight > 0)) {
-      overlay.classList.remove('is-visible');
+      ocultarOverlay(overlay);
       return false;
     }
     var count = getCount(tipo);
@@ -2349,11 +2400,14 @@ if ((/^\/\d{4}\/\d{2}\/.+\.html$/.test(location.pathname) || /^\/p\/cl-/.test(lo
       });
     };
 
-    if ('requestIdleCallback' in window) {
-      requestIdleCallback(ejecutar, { timeout: 2000 });
-    } else {
-      setTimeout(ejecutar, 200);
-    }
+    // v10.25: una página pre-renderizada que nadie abre no suma vista
+    window.fcAlActivar(function () {
+      if ('requestIdleCallback' in window) {
+        requestIdleCallback(ejecutar, { timeout: 2000 });
+      } else {
+        setTimeout(ejecutar, 200);
+      }
+    });
   });
 })();
 } catch (e) { console.error('[fc-core.js bloque 19]', e); }
@@ -2434,7 +2488,8 @@ document.addEventListener('DOMContentLoaded', function() {
 // TOAST NOTIFICACIÓN DE NUEVAS ENTRADAS
 try {
 window.addEventListener('load', function() {
-    idle(function() {
+    // v10.25: en prerender no se marca la visita (la página puede no abrirse nunca)
+    window.fcAlActivar(function () { idle(function() {
         if (sessionStorage.getItem('toastNuevasEntradasMostrado')) return;
 
         var ultimaVisita = localStorage.getItem('ultimaVisitaBlog');
@@ -2458,7 +2513,7 @@ window.addEventListener('load', function() {
         }
 
         localStorage.setItem('ultimaVisitaBlog', ahora);
-    });
+    }); });
 });
 } catch (e) { console.error('[fc-core.js bloque 22]', e); }
 //
