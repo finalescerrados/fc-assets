@@ -98,11 +98,9 @@ function htmlVacio() {
 }
 
 // Invitación a Flechazo literario (/p/flechazo-literario.html) en el estado vacío. Estilos en línea: sirven en claro y oscuro.
+// Ícono fa-face-grin-hearts (en el subset desde v10.26).
 function htmlFlechazo() {
-  var ico = '<svg aria-hidden="true" viewBox="0 0 24 24" width="34" height="34" style="flex-shrink:0;overflow:visible">'
-    + '<path d="M20.8 4.6a5.5 5.5 0 0 0-7.8 0L12 5.7l-1-1.1a5.5 5.5 0 0 0-7.8 7.8l1 1.1L12 21l7.8-7.5 1-1.1a5.5 5.5 0 0 0 0-7.8z" fill="#CD2122"/>'
-    + '<path d="M2 21L21.5 2.5M2 21l.6-3.4M2 21l3.4-.6" fill="none" stroke="currentColor" stroke-linecap="round" stroke-width="1.8"/>'
-    + '<path d="M22.5 1.5l-5.6 1.3 4.3 4.3z" fill="currentColor"/></svg>';
+  var ico = '<i class="fa-solid fa-face-grin-hearts" aria-hidden="true" style="font-size:32px;color:#CD2122;flex-shrink:0"></i>';
   return '<a class="fav-flechazo" href="/p/flechazo-literario.html" style="display:flex;align-items:center;gap:14px;margin:4px 0 16px;padding:14px 16px;border:2px solid #CD2122;border-radius:14px;text-decoration:none;color:inherit;line-height:1.45">'
     + ico
     + '<span><strong style="display:block;font-size:16px;margin-bottom:2px">¿No sabés por dónde empezar? Probá Flechazo literario</strong>'
