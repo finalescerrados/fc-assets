@@ -1,4 +1,4 @@
-/*! finalescerrados.com · fc-concursos.js · fc-assets v10.33 · sincronización de favoritos (Firebase) y relacionados de los listados.
+/*! finalescerrados.com · fc-concursos.js · fc-assets v10.34 · sincronización de favoritos (Firebase) y relacionados de los listados.
    Cada sentencia ejecutable va en su propio try/catch: si un bloque falla, los demás siguen corriendo. */
 
 /* ── bloque 1/2 · sincronización de favoritos con Firebase (fcSync) ── */
@@ -101,10 +101,22 @@ try {
       });
     } catch (e) {}
   }
+  // logout() deja la suscripción del navegador en un usuario anónimo nuevo, sin etiquetas: sin las pref_* deja de
+  // estar en los segmentos de los masivos (concursos, blog). Se leen antes y se le ponen al anónimo.
   function osDesvincular() {
     loginEnCurso = null; loginExt = null;
     try { sessionStorage.removeItem(K_OS); } catch (e) {}
-    osCola(function (OneSignal) { return OneSignal.logout(); });
+    osCola(function (OneSignal) {
+      var t = {}, pref = {}, n = 0;
+      try { t = (OneSignal.User && OneSignal.User.getTags && OneSignal.User.getTags()) || {}; } catch (e) {}
+      Object.keys(t).forEach(function (k) {
+        if (/^pref_/.test(k) && t[k] !== '' && t[k] != null) { pref[k] = String(t[k]); n++; }
+      });
+      return OneSignal.logout().then(function () {
+        if (!n || !OneSignal.User || !OneSignal.User.addTags) return;
+        return new Promise(function (ok) { setTimeout(ok, 1000); }).then(function () { return OneSignal.User.addTags(pref); });
+      });
+    });
   }
 
   // ---------- Recuadro "Avisarme antes del cierre" (página de favoritos) ----------
