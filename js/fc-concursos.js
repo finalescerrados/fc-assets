@@ -431,6 +431,7 @@ try {
     + '#fc-inv .fc-inv-pie a,#fc-inv .fc-inv-pie button{color:#5f5f5f;background:none;border:0;padding:6px 0;font:inherit;cursor:pointer;text-decoration:underline}'
     + '#fc-inv .fc-inv-ops{display:flex;flex-direction:column;gap:8px;margin:12px 0}'
     + '#fc-inv .fc-inv-op{display:flex;gap:10px;align-items:flex-start;font-size:14px;line-height:1.4;cursor:pointer}'
+    + '#fc-inv .fc-inv-fijo{cursor:default}'
     + '#fc-inv .fc-inv-op input{width:18px;height:18px;margin:1px 0 0;flex-shrink:0;accent-color:#CD2122}'
     + '#fc-inv .fc-inv-btn{display:block;width:100%;min-height:44px;border:0;border-radius:22px;background:#CD2122;color:#fff;font:inherit;font-size:15px;font-weight:700;cursor:pointer}'
     + '#fc-inv .fc-inv-pie-der{justify-content:flex-end}'
@@ -469,15 +470,15 @@ try {
     return c;
   }
   function mostrarPreferencias() {
-    var chk = function (tag, txt, sub) {
-      return '<label class="fc-inv-op"><input type="checkbox" data-tag="' + tag + '" checked> <span><b>' + txt + '</b> ' + sub + '</span></label>';
+    var chk = function (tag, txt, sub, fijo) {   // fijo: marcado y sin poder desmarcar (es el motivo de sincronizar)
+      return '<label class="fc-inv-op' + (fijo ? ' fc-inv-fijo' : '') + '"><input type="checkbox" data-tag="' + tag + '" checked' + (fijo ? ' disabled' : '') + '> <span><b>' + txt + '</b> ' + sub + '</span></label>';
     };
     tarjeta('<button type="button" class="fc-inv-x" data-inv="cerrar" aria-label="Cerrar">\u00d7</button>'
       + '<div class="fc-inv-cab"><span class="fc-inv-ico">' + ICO_CAMPANA + '</span><div>'
       + '<strong id="fc-inv-tit">\u00a1Listo, tus concursos est\u00e1n en la nube!</strong>'
       + '<p>\u00bfQu\u00e9 quer\u00e9s que te avisemos?</p></div></div>'
       + '<div class="fc-inv-ops">'
-      + chk('pref_concursos', 'Concursos:', 'tus favoritos antes del cierre y los resultados de donde participaste')
+      + chk('pref_concursos', 'Concursos:', 'tus favoritos antes del cierre y los resultados de donde participaste', true)
       + chk('pref_blog', 'Blog:', 'art\u00edculos nuevos')
       + '</div>'
       + '<button type="button" class="fc-inv-btn" data-inv="avisos">Activar avisos</button>'
@@ -485,9 +486,9 @@ try {
   }
   async function activarDesdeTarjeta() {
     var c = document.getElementById('fc-inv'); if (!c) return;
-    var tags = {}, alguno = false;
-    [].forEach.call(c.querySelectorAll('input[data-tag]'), function (i) { tags[i.getAttribute('data-tag')] = i.checked ? '1' : '0'; if (i.checked) alguno = true; });
-    if (!alguno) { cerrarInvitacion(); return; }
+    var tags = {};
+    [].forEach.call(c.querySelectorAll('input[data-tag]'), function (i) { tags[i.getAttribute('data-tag')] = i.checked ? '1' : '0'; });
+    tags.pref_concursos = '1';   // siempre: es lo que se activa al sincronizar
     var permiso = await pedirPermiso();
     cerrarInvitacion();
     if (permiso !== 'granted') {
@@ -495,7 +496,7 @@ try {
       pintar(); return;
     }
     osVincularCon(tags);
-    toast(tags.pref_concursos === '1' ? 'Listo: te vamos a avisar antes de que cierren tus favoritos' : 'Listo: te vamos a avisar cuando haya art\u00edculos nuevos');
+    toast('Listo: te vamos a avisar antes de que cierren tus favoritos' + (tags.pref_blog === '1' ? ' y cuando haya art\u00edculos nuevos' : ''));
     pintar();
   }
   function invitar(estadoNuevo) {
