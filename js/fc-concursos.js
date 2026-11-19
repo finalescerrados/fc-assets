@@ -196,7 +196,8 @@ try {
     var ahora = Date.now(), out = {}, n = 0;
     function marca(id, val) { return (pend[id] && pend[id].v === val) ? pend[id].t : ahora; }
     Object.keys(cur).forEach(function (id) {
-      if (cur[id] === snap[id]) return;
+      // Lo subido al salir (pend) todavía no está en la foto: si difiere de lo actual, es un cambio
+      if (cur[id] === snap[id] && !(pend[id] && pend[id].v !== cur[id])) return;
       var p = cur[id].split('|');
       out[id] = { e: +p[0], t: marca(id, cur[id]) };
       if (p[1]) out[id].f = p[1];
@@ -205,8 +206,9 @@ try {
       if (p[4]) { try { out[id].x = decodeURIComponent(p[4]); } catch (e) {} }
       n++;
     });
-    Object.keys(snap).forEach(function (id) {
-      if (id in cur) return;
+    // Bajas: lo que estaba en la foto o en lo pendiente y ya no está acá
+    Object.keys(snap).concat(Object.keys(pend)).forEach(function (id) {
+      if ((id in cur) || (id in out)) return;
       out[id] = { e: 0, t: marca(id, '') };
       n++;
     });
