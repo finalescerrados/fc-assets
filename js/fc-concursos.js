@@ -1,4 +1,4 @@
-/*! finalescerrados.com · fc-concursos.js · fc-assets v10.31 · sincronización de favoritos (Firebase) y relacionados de los listados.
+/*! finalescerrados.com · fc-concursos.js · fc-assets v10.32 · sincronización de favoritos (Firebase) y relacionados de los listados.
    Cada sentencia ejecutable va en su propio try/catch: si un bloque falla, los demás siguen corriendo. */
 
 /* ── bloque 1/2 · sincronización de favoritos con Firebase (fcSync) ── */
@@ -369,6 +369,7 @@ try {
 
   function desvincular(silencioso) {
     lsDel(K_AUTH); lsDel(K_COD); lsDel(K_SNAP); lsDel(K_PEND); lsDel(K_PREFC);
+    try { sessionStorage.removeItem('fc_inv_ses'); } catch (e) {}   // si vuelve a guardar algo, se le ofrece de nuevo
     osDesvincular();
     if (!silencioso) toast('Este dispositivo dejó de sincronizar. Tus concursos siguen guardados acá.');
     pintar();
@@ -447,8 +448,12 @@ try {
       osCola(function (OneSignal) {
         return OneSignal.login(ext).then(function () {
           setTimeout(function () {
-            var t = leerPrefs(OneSignal);
-            if (String(t.pref_concursos) !== '1') mostrarPreferencias('guardar', t.pref_blog);
+            var t = leerPrefs(OneSignal), pc = t.pref_concursos == null ? '' : String(t.pref_concursos);
+            if (pc === '0') mostrarPreferencias('guardar', t.pref_blog);   // eligió explícitamente sin concursos
+            else if (pc !== '1') {   // sin etiqueta (suscriptor viejo): ya aceptó avisos y concursos es obligatorio al sincronizar
+              lsSet(K_PREFC, '1');
+              if (OneSignal.User && OneSignal.User.addTags) OneSignal.User.addTags({ pref_concursos: '1' });
+            }
           }, 1500);
         });
       });
