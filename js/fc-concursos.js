@@ -55,6 +55,19 @@ try {
       });
     } catch (e) {}
   }
+  // Igual que osVincular, pero siempre (sin el "una vez por sesión") y sumando etiquetas al usuario identificado.
+  // Primero login y después tags: si el usuario ya existía en OneSignal, lo anónimo no se le pasa.
+  async function osVincularCon(tags) {
+    try {
+      var ext = await idExterno(); if (!ext) return;
+      osCola(function (OneSignal) {
+        return OneSignal.login(ext).then(function () {
+          try { sessionStorage.setItem(K_OS, ext); } catch (e) {}
+          if (tags && OneSignal.User && OneSignal.User.addTags) return OneSignal.User.addTags(tags);
+        });
+      });
+    } catch (e) {}
+  }
   function osDesvincular() {
     try { sessionStorage.removeItem(K_OS); } catch (e) {}
     osCola(function (OneSignal) { return OneSignal.logout(); });
@@ -113,7 +126,7 @@ try {
   }
   // El permiso se pide dentro del clic (si no, el navegador bloquea el cartel). Con el SDK ya cargado lo
   // pide OneSignal; si Zaraz todavía no lo cargó, lo pide el navegador y OneSignal suscribe al llegar.
-  async function activarAvisos() {
+  async function pedirPermiso() {   // llamar dentro de un clic
     var permiso;
     try {
       if (window.OneSignal && OneSignal.Notifications && OneSignal.Notifications.requestPermission) {
@@ -123,15 +136,19 @@ try {
         permiso = await Notification.requestPermission();
       }
     } catch (e) { permiso = Notification.permission; }
-    if (permiso !== 'granted') { pintar(); return; }
+    if (permiso !== 'granted') return permiso;
     lsDel(K_OS_OFF);
     try { sessionStorage.removeItem(K_OS); } catch (e) {}
     osCola(function (OneSignal) {
       var ps = OneSignal.User && OneSignal.User.PushSubscription;
       if (ps && ps.optedIn === false) return ps.optIn();
     });
+    return permiso;
+  }
+  async function activarAvisos() {
+    if (await pedirPermiso() !== 'granted') { pintar(); return; }
     if (!vinculado()) { avisoPend = true; pintar(); return; }   // sin lista en la nube no hay a quién avisar: que elija Google o código
-    osVincular();
+    osVincularCon({ pref_concursos: '1' });
     toast('Listo: te vamos a avisar antes de que cierren tus favoritos');
     pintar();
   }
@@ -390,13 +407,19 @@ try {
     marcarSesion(K_ONETAP);
     iniciarGIS().then(function () { google.accounts.id.prompt(); }).catch(function () {});
   }
-  function avisarVinculado() {
-    cerrarInvitacion();
+  function avisarVinculado(pidioAvisos) {
+    if (pidioAvisos) osVincularCon({ pref_concursos: '1' });   // venía de "Avisarme antes del cierre"
+    if (puedePedirAvisos()) mostrarPreferencias(); else cerrarInvitacion();
     try { window.dispatchEvent(new CustomEvent('fc-sync-vinculado')); } catch (e) {}
+  }
+  // Solo si el navegador todavía no respondió el permiso (ni lo aceptó ni lo bloqueó)
+  function puedePedirAvisos() {
+    return !esIOSsinApp() && ('Notification' in window) && ('serviceWorker' in navigator) && Notification.permission === 'default';
   }
 
   // ---------- Invitación al guardar algo sin estar sincronizado (una vez por sesión) ----------
   var ICO_NUBE = '<svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M17.5 19H7a5 5 0 1 1 1.1-9.9A6 6 0 0 1 19.5 11a4 4 0 0 1-2 8z"/><path d="M12 16v-5M9.5 13.5 12 11l2.5 2.5"/></svg>';
+  var ICO_CAMPANA = '<svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M18 8a6 6 0 0 0-12 0c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.7 21a2 2 0 0 1-3.4 0"/></svg>';
   var CSS_INV = '#fc-inv{position:fixed;left:50%;bottom:16px;transform:translate(-50%,24px);opacity:0;transition:opacity .25s,transform .25s;z-index:99990;width:calc(100% - 24px);max-width:400px;box-sizing:border-box;background:#fff;color:#1a1a1a;border-radius:16px;box-shadow:0 10px 36px rgba(0,0,0,.28);padding:16px 16px 12px;font-family:inherit;line-height:1.45}'
     + '#fc-inv.fc-inv-ver{opacity:1;transform:translate(-50%,0)}'
     + '#fc-inv .fc-inv-cab{display:flex;gap:12px;align-items:flex-start;padding-right:22px}'
@@ -406,6 +429,11 @@ try {
     + '#fc-inv .fc-inv-g{min-height:44px;margin:12px 0 6px;display:flex;justify-content:center}'
     + '#fc-inv .fc-inv-pie{display:flex;justify-content:space-between;align-items:center;font-size:13px}'
     + '#fc-inv .fc-inv-pie a,#fc-inv .fc-inv-pie button{color:#5f5f5f;background:none;border:0;padding:6px 0;font:inherit;cursor:pointer;text-decoration:underline}'
+    + '#fc-inv .fc-inv-ops{display:flex;flex-direction:column;gap:8px;margin:12px 0}'
+    + '#fc-inv .fc-inv-op{display:flex;gap:10px;align-items:flex-start;font-size:14px;line-height:1.4;cursor:pointer}'
+    + '#fc-inv .fc-inv-op input{width:18px;height:18px;margin:1px 0 0;flex-shrink:0;accent-color:#CD2122}'
+    + '#fc-inv .fc-inv-btn{display:block;width:100%;min-height:44px;border:0;border-radius:22px;background:#CD2122;color:#fff;font:inherit;font-size:15px;font-weight:700;cursor:pointer}'
+    + '#fc-inv .fc-inv-pie-der{justify-content:flex-end}'
     + '#fc-inv .fc-inv-x{position:absolute;top:8px;right:8px;width:32px;height:32px;border:0;background:none;color:#5f5f5f;font-size:22px;line-height:1;cursor:pointer;border-radius:50%}'
     + 'body.dark-mode #fc-inv{background:#1f1f1f;color:#f1f1f1;box-shadow:0 10px 36px rgba(0,0,0,.6)}'
     + 'body.dark-mode #fc-inv p{color:#c8c8c8}'
@@ -417,33 +445,73 @@ try {
     var t = document.getElementById('toast-container'); if (t) t.style.bottom = '';
     setTimeout(function () { if (c.parentNode) c.parentNode.removeChild(c); }, 300);
   }
+  function tarjeta(html) {   // crea (o reutiliza) la tarjeta flotante y le pone el contenido
+    if (!document.getElementById('fc-inv-css')) {
+      var st = document.createElement('style'); st.id = 'fc-inv-css'; st.textContent = CSS_INV; document.head.appendChild(st);
+    }
+    var c = document.getElementById('fc-inv'), nueva = !c;
+    if (nueva) {
+      c = document.createElement('div');
+      c.id = 'fc-inv'; c.setAttribute('role', 'dialog'); c.setAttribute('aria-labelledby', 'fc-inv-tit');
+      c.addEventListener('click', function (ev) {
+        var b = ev.target.closest && ev.target.closest('[data-inv]'); if (!b) return;
+        var acc = b.getAttribute('data-inv');
+        if (acc === 'cerrar') cerrarInvitacion();
+        else if (acc === 'avisos') activarDesdeTarjeta();
+      });
+      document.body.appendChild(c);
+    }
+    c.innerHTML = html;
+    requestAnimationFrame(function () {
+      c.classList.add('fc-inv-ver');
+      var t = document.getElementById('toast-container'); if (t) t.style.bottom = (c.offsetHeight + 28) + 'px';
+    });
+    return c;
+  }
+  function mostrarPreferencias() {
+    var chk = function (tag, txt, sub) {
+      return '<label class="fc-inv-op"><input type="checkbox" data-tag="' + tag + '" checked> <span><b>' + txt + '</b> ' + sub + '</span></label>';
+    };
+    tarjeta('<button type="button" class="fc-inv-x" data-inv="cerrar" aria-label="Cerrar">\u00d7</button>'
+      + '<div class="fc-inv-cab"><span class="fc-inv-ico">' + ICO_CAMPANA + '</span><div>'
+      + '<strong id="fc-inv-tit">\u00a1Listo, tus concursos est\u00e1n en la nube!</strong>'
+      + '<p>\u00bfQu\u00e9 quer\u00e9s que te avisemos?</p></div></div>'
+      + '<div class="fc-inv-ops">'
+      + chk('pref_concursos', 'Concursos:', 'tus favoritos antes del cierre y los resultados de donde participaste')
+      + chk('pref_blog', 'Blog:', 'art\u00edculos nuevos')
+      + '</div>'
+      + '<button type="button" class="fc-inv-btn" data-inv="avisos">Activar avisos</button>'
+      + '<div class="fc-inv-pie fc-inv-pie-der"><button type="button" data-inv="cerrar">Ahora no</button></div>');
+  }
+  async function activarDesdeTarjeta() {
+    var c = document.getElementById('fc-inv'); if (!c) return;
+    var tags = {}, alguno = false;
+    [].forEach.call(c.querySelectorAll('input[data-tag]'), function (i) { tags[i.getAttribute('data-tag')] = i.checked ? '1' : '0'; if (i.checked) alguno = true; });
+    if (!alguno) { cerrarInvitacion(); return; }
+    var permiso = await pedirPermiso();
+    cerrarInvitacion();
+    if (permiso !== 'granted') {
+      if (permiso === 'denied') toast('El navegador bloque\u00f3 los avisos. Pod\u00e9s habilitarlos desde el candado de la barra de direcciones.', 'warning');
+      pintar(); return;
+    }
+    osVincularCon(tags);
+    toast(tags.pref_concursos === '1' ? 'Listo: te vamos a avisar antes de que cierren tus favoritos' : 'Listo: te vamos a avisar cuando haya art\u00edculos nuevos');
+    pintar();
+  }
   function invitar(estadoNuevo) {
     if (vinculado() || sesion(K_INV) || document.getElementById('fc-inv')) return;
     if (document.documentElement.classList.contains('fc-mazo')) return;   // Flechazo tiene su propia invitación al final
     marcarSesion(K_INV);
-    if (!document.getElementById('fc-inv-css')) {
-      var st = document.createElement('style'); st.id = 'fc-inv-css'; st.textContent = CSS_INV; document.head.appendChild(st);
-    }
     var part = +estadoNuevo === 2;
-    var c = document.createElement('div');
-    c.id = 'fc-inv'; c.setAttribute('role', 'dialog'); c.setAttribute('aria-labelledby', 'fc-inv-tit');
-    c.innerHTML = '<button type="button" class="fc-inv-x" data-inv="cerrar" aria-label="Cerrar">\u00d7</button>'
+    tarjeta('<button type="button" class="fc-inv-x" data-inv="cerrar" aria-label="Cerrar">\u00d7</button>'
       + '<div class="fc-inv-cab"><span class="fc-inv-ico">' + ICO_NUBE + '</span><div>'
       + '<strong id="fc-inv-tit">' + (part ? 'No pierdas tu historial de participaciones' : 'Guard\u00e1 tus concursos en la nube') + '</strong>'
       + '<p>Por ahora ' + (part ? 'est\u00e1' : 'est\u00e1n') + ' solo en este navegador: si lo borr\u00e1s o cambi\u00e1s de celu, se pierde' + (part ? '' : 'n') + '. Con Google ' + (part ? 'lo' : 'los') + ' ten\u00e9s en todos tus dispositivos.</p>'
       + '</div></div>'
       + '<div class="fc-inv-g" id="fc-inv-g"></div>'
       + '<div class="fc-inv-pie"><a href="/p/mis-concursos-favoritos.html#fc-sync-box">Prefiero un c\u00f3digo, sin cuenta</a>'
-      + '<button type="button" data-inv="cerrar">Ahora no</button></div>';
-    document.body.appendChild(c);
-    c.addEventListener('click', function (ev) {
-      if (ev.target.closest && ev.target.closest('[data-inv="cerrar"]')) cerrarInvitacion();
-    });
+      + '<button type="button" data-inv="cerrar">Ahora no</button></div>');
     montarBotonGoogle(document.getElementById('fc-inv-g'));
-    requestAnimationFrame(function () {
-      c.classList.add('fc-inv-ver');
-      var t = document.getElementById('toast-container'); if (t) t.style.bottom = (c.offsetHeight + 28) + 'px';
-    });
   }
   async function alVolverDeGoogle(resp) {
     try {
@@ -463,13 +531,14 @@ try {
       }));
       lsDel(K_COD);
       empezarDeCero();
-      toast(avisoPend ? 'Listo: sincronizado con tu cuenta de Google. Te vamos a avisar antes de que cierren tus favoritos'
+      var pidio = avisoPend;
+      toast(pidio ? 'Listo: sincronizado con tu cuenta de Google. Te vamos a avisar antes de que cierren tus favoritos'
         : 'Listo: este dispositivo quedó sincronizado con tu cuenta de Google');
       avisoPend = false;
       try { sessionStorage.removeItem(K_OS); } catch (e) {}
       osVincular();
       pintar();
-      avisarVinculado();
+      avisarVinculado(pidio);
       await sincronizar();
     } catch (e) {
       toast('No se pudo entrar con Google. Probá de nuevo en un rato.', 'warning');
@@ -486,7 +555,7 @@ try {
     try { sessionStorage.removeItem(K_OS); } catch (e) {}
     osVincular();
     pintar();
-    avisarVinculado();
+    avisarVinculado(creado === 'aviso');
     sincronizar();
   }
   function copiar(txt, msg) {
