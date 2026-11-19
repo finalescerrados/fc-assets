@@ -1128,6 +1128,7 @@ function fcMgPintar(el, n) {
 function fcMeGusta(id, antes, despues, el) {
   var d = ((parseInt(despues, 10) || 0) > 0 ? 1 : 0) - ((parseInt(antes, 10) || 0) > 0 ? 1 : 0);
   if (!d || !/^[0-9]{6,25}$/.test(String(id))) return 0;
+  if (d > 0 && window.fcSync && typeof window.fcSync.invitar === 'function') { try { window.fcSync.invitar(despues); } catch (e) {} }   // invitar a guardar en la nube
   try {
     fetch(FC_MG_DB + id + '.json', { method: 'PUT', keepalive: true, body: JSON.stringify({ '.sv': { increment: d } }) })
       .catch(function () {});

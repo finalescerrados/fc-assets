@@ -1,4 +1,4 @@
-/*! finalescerrados.com · fc-concursos.js · fc-assets v10.18 · sincronización de favoritos (Firebase) y relacionados de los listados.
+/*! finalescerrados.com · fc-concursos.js · fc-assets v10.29 · sincronización de favoritos (Firebase) y relacionados de los listados.
    Cada sentencia ejecutable va en su propio try/catch: si un bloque falla, los demás siguen corriendo. */
 
 /* ── bloque 1/2 · sincronización de favoritos con Firebase (fcSync) ── */
@@ -364,15 +364,86 @@ try {
     });
     return gisPromesa;
   }
-  function montarBotonGoogle() {
-    var el = document.getElementById('fc-sync-google'); if (!el) return;
-    cargarGIS().then(function () {
+  function iniciarGIS() {
+    return cargarGIS().then(function () {
       if (!gisIniciado) {
-        google.accounts.id.initialize({ client_id: CLIENT_ID, callback: alVolverDeGoogle });
+        google.accounts.id.initialize({
+          client_id: CLIENT_ID, callback: alVolverDeGoogle,
+          auto_select: false, cancel_on_tap_outside: true, itp_support: true, use_fedcm_for_prompt: true
+        });
         gisIniciado = true;
       }
+    });
+  }
+  function montarBotonGoogle(el) {
+    el = el || document.getElementById('fc-sync-google'); if (!el) return;
+    iniciarGIS().then(function () {
       google.accounts.id.renderButton(el, { theme: 'outline', size: 'large', shape: 'pill', text: 'continue_with', locale: 'es' });
     }).catch(function () { el.textContent = 'No se pudo cargar el botón de Google.'; });
+  }
+  // One Tap de Google en la página de favoritos: una vez por sesión, solo si hay algo que guardar
+  var K_ONETAP = 'fc_onetap_ses', K_INV = 'fc_inv_ses';
+  function sesion(k) { try { return sessionStorage.getItem(k) === '1'; } catch (e) { return true; } }
+  function marcarSesion(k) { try { sessionStorage.setItem(k, '1'); } catch (e) {} }
+  function oneTap() {
+    if (vinculado() || sesion(K_ONETAP) || !hayFavoritos() || document.getElementById('fc-inv')) return;
+    marcarSesion(K_ONETAP);
+    iniciarGIS().then(function () { google.accounts.id.prompt(); }).catch(function () {});
+  }
+  function avisarVinculado() {
+    cerrarInvitacion();
+    try { window.dispatchEvent(new CustomEvent('fc-sync-vinculado')); } catch (e) {}
+  }
+
+  // ---------- Invitación al guardar algo sin estar sincronizado (una vez por sesión) ----------
+  var ICO_NUBE = '<svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M17.5 19H7a5 5 0 1 1 1.1-9.9A6 6 0 0 1 19.5 11a4 4 0 0 1-2 8z"/><path d="M12 16v-5M9.5 13.5 12 11l2.5 2.5"/></svg>';
+  var CSS_INV = '#fc-inv{position:fixed;left:50%;bottom:16px;transform:translate(-50%,24px);opacity:0;transition:opacity .25s,transform .25s;z-index:99990;width:calc(100% - 24px);max-width:400px;box-sizing:border-box;background:#fff;color:#1a1a1a;border-radius:16px;box-shadow:0 10px 36px rgba(0,0,0,.28);padding:16px 16px 12px;font-family:inherit;line-height:1.45}'
+    + '#fc-inv.fc-inv-ver{opacity:1;transform:translate(-50%,0)}'
+    + '#fc-inv .fc-inv-cab{display:flex;gap:12px;align-items:flex-start;padding-right:22px}'
+    + '#fc-inv .fc-inv-ico{color:#CD2122;flex-shrink:0;margin-top:2px}'
+    + '#fc-inv strong{display:block;font-size:16px;margin-bottom:2px}'
+    + '#fc-inv p{margin:0;font-size:14px;color:#4a4a4a}'
+    + '#fc-inv .fc-inv-g{min-height:44px;margin:12px 0 6px;display:flex;justify-content:center}'
+    + '#fc-inv .fc-inv-pie{display:flex;justify-content:space-between;align-items:center;font-size:13px}'
+    + '#fc-inv .fc-inv-pie a,#fc-inv .fc-inv-pie button{color:#5f5f5f;background:none;border:0;padding:6px 0;font:inherit;cursor:pointer;text-decoration:underline}'
+    + '#fc-inv .fc-inv-x{position:absolute;top:8px;right:8px;width:32px;height:32px;border:0;background:none;color:#5f5f5f;font-size:22px;line-height:1;cursor:pointer;border-radius:50%}'
+    + 'body.dark-mode #fc-inv{background:#1f1f1f;color:#f1f1f1;box-shadow:0 10px 36px rgba(0,0,0,.6)}'
+    + 'body.dark-mode #fc-inv p{color:#c8c8c8}'
+    + 'body.dark-mode #fc-inv .fc-inv-pie a,body.dark-mode #fc-inv .fc-inv-pie button,body.dark-mode #fc-inv .fc-inv-x{color:#b0b0b0}'
+    + '@media (prefers-reduced-motion:reduce){#fc-inv{transition:none}}';
+  function cerrarInvitacion() {
+    var c = document.getElementById('fc-inv'); if (!c) return;
+    c.classList.remove('fc-inv-ver');
+    var t = document.getElementById('toast-container'); if (t) t.style.bottom = '';
+    setTimeout(function () { if (c.parentNode) c.parentNode.removeChild(c); }, 300);
+  }
+  function invitar(estadoNuevo) {
+    if (vinculado() || sesion(K_INV) || document.getElementById('fc-inv')) return;
+    if (document.documentElement.classList.contains('fc-mazo')) return;   // Flechazo tiene su propia invitación al final
+    marcarSesion(K_INV);
+    if (!document.getElementById('fc-inv-css')) {
+      var st = document.createElement('style'); st.id = 'fc-inv-css'; st.textContent = CSS_INV; document.head.appendChild(st);
+    }
+    var part = +estadoNuevo === 2;
+    var c = document.createElement('div');
+    c.id = 'fc-inv'; c.setAttribute('role', 'dialog'); c.setAttribute('aria-labelledby', 'fc-inv-tit');
+    c.innerHTML = '<button type="button" class="fc-inv-x" data-inv="cerrar" aria-label="Cerrar">\u00d7</button>'
+      + '<div class="fc-inv-cab"><span class="fc-inv-ico">' + ICO_NUBE + '</span><div>'
+      + '<strong id="fc-inv-tit">' + (part ? 'No pierdas tu historial de participaciones' : 'Guard\u00e1 tus concursos en la nube') + '</strong>'
+      + '<p>Por ahora ' + (part ? 'est\u00e1' : 'est\u00e1n') + ' solo en este navegador: si lo borr\u00e1s o cambi\u00e1s de celu, se pierde' + (part ? '' : 'n') + '. Con Google ' + (part ? 'lo' : 'los') + ' ten\u00e9s en todos tus dispositivos.</p>'
+      + '</div></div>'
+      + '<div class="fc-inv-g" id="fc-inv-g"></div>'
+      + '<div class="fc-inv-pie"><a href="/p/mis-concursos-favoritos.html#fc-sync-box">Prefiero un c\u00f3digo, sin cuenta</a>'
+      + '<button type="button" data-inv="cerrar">Ahora no</button></div>';
+    document.body.appendChild(c);
+    c.addEventListener('click', function (ev) {
+      if (ev.target.closest && ev.target.closest('[data-inv="cerrar"]')) cerrarInvitacion();
+    });
+    montarBotonGoogle(document.getElementById('fc-inv-g'));
+    requestAnimationFrame(function () {
+      c.classList.add('fc-inv-ver');
+      var t = document.getElementById('toast-container'); if (t) t.style.bottom = (c.offsetHeight + 28) + 'px';
+    });
   }
   async function alVolverDeGoogle(resp) {
     try {
@@ -398,6 +469,7 @@ try {
       try { sessionStorage.removeItem(K_OS); } catch (e) {}
       osVincular();
       pintar();
+      avisarVinculado();
       await sincronizar();
     } catch (e) {
       toast('No se pudo entrar con Google. Probá de nuevo en un rato.', 'warning');
@@ -414,6 +486,7 @@ try {
     try { sessionStorage.removeItem(K_OS); } catch (e) {}
     osVincular();
     pintar();
+    avisarVinculado();
     sincronizar();
   }
   function copiar(txt, msg) {
@@ -438,9 +511,10 @@ try {
         '<p class="fc-sync-nota">Usalo en tus otros dispositivos. No lo compartas. \u00b7 <a href="#" data-fcs="salir">Desvincular</a> \u00b7 <a href="#" data-fcs="borrar">Borrar mi lista de la nube</a></p>';
     } else {
       sync =
-        '<p class="fc-sync-linea"><i class="fa-solid fa-right-left"></i> <strong>' + (av ? '\u00bfUs\u00e1s otro dispositivo?' : 'Sincroniz\u00e1 tus concursos en todos tus dispositivos') + '</strong></p>' +
+        '<p class="fc-sync-linea"><i class="fa-solid fa-right-left"></i> <strong>Guard\u00e1 tus concursos en la nube</strong></p>' +
+        '<p class="fc-av-sub">Hoy est\u00e1n solo en este navegador. Con Google los ves en el celu y en la compu, y no se pierden.</p>' +
         '<div id="fc-sync-google" class="fc-sync-google"></div>' +
-        '<details class="fc-sync-sincuenta"><summary>Usar un c\u00f3digo en vez de una cuenta</summary>' +
+        '<details class="fc-sync-sincuenta"><summary>\u00bfPrefer\u00eds no usar Google? Us\u00e1 un c\u00f3digo</summary>' +
         '<div class="fc-sync-acciones"><button type="button" class="btn-borrar btn-verde" data-fcs="crear"><i class="fa-solid fa-lock"></i> Crear c\u00f3digo</button></div>' +
         '<form class="fc-sync-form" novalidate>' +
         '<input type="text" autocomplete="off" autocapitalize="characters" spellcheck="false" placeholder="C\u00f3digo o enlace" aria-label="C\u00f3digo de sincronizaci\u00f3n">' +
@@ -496,6 +570,7 @@ try {
     }
     pintar();
     if (vinculado()) { sincronizar(); osVincular(); }
+    else if (document.getElementById('lista-favoritos')) oneTap();
   }
 
   document.addEventListener('visibilitychange', function () {
@@ -508,7 +583,10 @@ try {
     if (typeof idle === 'function') idle(init, 3000); else setTimeout(init, 500);
   });
 
-  window.fcSync = { sincronizar: function () { return sincronizar(true); }, desvincular: desvincular };
+  window.fcSync = {
+    sincronizar: function () { return sincronizar(true); }, desvincular: desvincular,
+    vinculado: vinculado, invitar: invitar, botonGoogle: montarBotonGoogle
+  };
 })();
 } catch (e) { console.error('[fc-concursos.js bloque 1]', e); }
 //
