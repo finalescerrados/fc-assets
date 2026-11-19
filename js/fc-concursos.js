@@ -1,4 +1,4 @@
-/*! finalescerrados.com · fc-concursos.js · fc-assets v10.34 · sincronización de favoritos (Firebase) y relacionados de los listados.
+/*! finalescerrados.com · fc-concursos.js · fc-assets v10.35 · sincronización de favoritos (Firebase) y relacionados de los listados.
    Cada sentencia ejecutable va en su propio try/catch: si un bloque falla, los demás siguen corriendo. */
 
 /* ── bloque 1/2 · sincronización de favoritos con Firebase (fcSync) ── */
@@ -40,9 +40,21 @@ try {
     var h = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(base));
     return 'fc_' + Array.from(new Uint8Array(h)).map(function (b) { return ('0' + b.toString(16)).slice(-2); }).join('').slice(0, 32);
   }
+  // Cola de OneSignal. Zaraz carga el SDK recién con la primera interacción y agrega su OneSignal.init() a la cola
+  // después de lo que ya pusimos nosotros: lo nuestro corre ANTES del init y login()/logout() fallan
+  // ("Cannot read properties of undefined (reading 'en')", probado en producción). Por eso: no se devuelve la promesa
+  // (no frena la cola, así el init corre) y si la tarea falla se reintenta cada 1,5 s hasta que el SDK esté listo.
   function osCola(fn) {
     window.OneSignalDeferred = window.OneSignalDeferred || [];
-    window.OneSignalDeferred.push(function (OneSignal) { try { return fn(OneSignal); } catch (e) {} });
+    var intentos = 0;
+    function correr(OneSignal) {
+      var r;
+      try { r = fn(OneSignal); } catch (e) { r = Promise.reject(e); }
+      if (r && typeof r.then === 'function') {
+        r.then(null, function () { if (++intentos < 40) setTimeout(function () { correr(OneSignal); }, 1500); });
+      }
+    }
+    window.OneSignalDeferred.push(function (OneSignal) { correr(OneSignal); });
   }
   async function osVincular() {
     try {
@@ -106,15 +118,21 @@ try {
   function osDesvincular() {
     loginEnCurso = null; loginExt = null;
     try { sessionStorage.removeItem(K_OS); } catch (e) {}
+    var pref = {}, n = 0, salio = false;   // si se reintenta después del logout, solo se reintentan las etiquetas
     osCola(function (OneSignal) {
-      var t = {}, pref = {}, n = 0;
-      try { t = (OneSignal.User && OneSignal.User.getTags && OneSignal.User.getTags()) || {}; } catch (e) {}
-      Object.keys(t).forEach(function (k) {
-        if (/^pref_/.test(k) && t[k] !== '' && t[k] != null) { pref[k] = String(t[k]); n++; }
+      if (!salio) {
+        var t = {}; pref = {}; n = 0;
+        try { t = (OneSignal.User && OneSignal.User.getTags && OneSignal.User.getTags()) || {}; } catch (e) {}
+        Object.keys(t).forEach(function (k) {
+          if (/^pref_/.test(k) && t[k] !== '' && t[k] != null) { pref[k] = String(t[k]); n++; }
+        });
+      }
+      var paso = salio ? Promise.resolve() : OneSignal.logout().then(function () {
+        salio = true;
+        return new Promise(function (ok) { setTimeout(ok, 1000); });
       });
-      return OneSignal.logout().then(function () {
-        if (!n || !OneSignal.User || !OneSignal.User.addTags) return;
-        return new Promise(function (ok) { setTimeout(ok, 1000); }).then(function () { return OneSignal.User.addTags(pref); });
+      return paso.then(function () {
+        if (n && OneSignal.User && OneSignal.User.addTags) return OneSignal.User.addTags(pref);
       });
     });
   }
