@@ -102,9 +102,10 @@ function htmlVacio() {
 function htmlFlechazo() {
   var ico = '<i class="fa-solid fa-face-grin-hearts" aria-hidden="true" style="font-size:32px;color:#CD2122;flex-shrink:0"></i>';
   return '<a class="fav-flechazo" href="/p/flechazo-literario.html" style="display:flex;align-items:center;gap:14px;margin:4px 0 16px;padding:14px 16px;border:2px solid #CD2122;border-radius:14px;text-decoration:none;color:inherit;line-height:1.45">'
+    + '<style>body.dark-mode .fav-flechazo{--fcf-tit:#f1f1f1;--fcf-txt:#c8c8c8}</style>'
     + ico
-    + '<span><strong style="display:block;font-size:16px;margin-bottom:2px">¿No sabés por dónde empezar? Probá Flechazo literario</strong>'
-    + '<span style="font-size:14px;opacity:.85">Como Tinder, pero con concursos: deslizá a la derecha los que te gustan y aparecen acá.</span></span></a>';
+    + '<span><strong style="display:block;font-size:16px;margin-bottom:2px;color:var(--fcf-tit,inherit)!important">¿No sabés por dónde empezar? Probá Flechazo literario</strong>'
+    + '<span style="font-size:14px;opacity:.85;color:var(--fcf-txt,inherit)!important">Como Tinder, pero con concursos: deslizá a la derecha los que te gustan y aparecen acá.</span></span></a>';
 }
 
 // --- Avisos (boletín / café): frecuencia limitada y respetando a quien ya aportó ---
