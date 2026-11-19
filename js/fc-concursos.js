@@ -1,4 +1,4 @@
-/*! finalescerrados.com · fc-concursos.js · fc-assets v10.30 · sincronización de favoritos (Firebase) y relacionados de los listados.
+/*! finalescerrados.com · fc-concursos.js · fc-assets v10.31 · sincronización de favoritos (Firebase) y relacionados de los listados.
    Cada sentencia ejecutable va en su propio try/catch: si un bloque falla, los demás siguen corriendo. */
 
 /* ── bloque 1/2 · sincronización de favoritos con Firebase (fcSync) ── */
@@ -414,6 +414,9 @@ try {
   }
   function montarBotonGoogle(el) {
     el = el || document.getElementById('fc-sync-google'); if (!el) return;
+    // El iframe de Google es claro: con el sitio en oscuro (color-scheme: dark) el navegador le pinta un fondo
+    // opaco y queda un rectángulo blanco detrás del botón. Con el mismo esquema que el iframe, el fondo es transparente.
+    el.style.colorScheme = 'light';
     iniciarGIS().then(function () {
       google.accounts.id.renderButton(el, { theme: 'outline', size: 'large', shape: 'pill', text: 'continue_with', locale: 'es' });
     }).catch(function () { el.textContent = 'No se pudo cargar el botón de Google.'; });
