@@ -1,4 +1,4 @@
-/*! finalescerrados.com · fc-concursos.js · fc-assets v10.32 · sincronización de favoritos (Firebase) y relacionados de los listados.
+/*! finalescerrados.com · fc-concursos.js · fc-assets v10.33 · sincronización de favoritos (Firebase) y relacionados de los listados.
    Cada sentencia ejecutable va en su propio try/catch: si un bloque falla, los demás siguen corriendo. */
 
 /* ── bloque 1/2 · sincronización de favoritos con Firebase (fcSync) ── */
@@ -49,23 +49,44 @@ try {
       if (ls(K_OS_OFF) === '1') return;   // pidió "Dejar de avisarme"
       var ext = await idExterno(); if (!ext) return;
       try { if (sessionStorage.getItem(K_OS) === ext) return; } catch (e) {}   // una vez por sesión
-      osCola(function (OneSignal) {
-        return OneSignal.login(ext).then(function () {
-          try { sessionStorage.setItem(K_OS, ext); } catch (e) {}
-          setTimeout(function () { leerPrefs(OneSignal); }, 1500);
-        });
-      });
+      osCola(function (OneSignal) { return osLogin(OneSignal, ext); });
     } catch (e) {}
   }
-  // Etiquetas del usuario de OneSignal ya identificado (tras el login el SDK las trae del servidor).
+  // Login en OneSignal conservando las preferencias del navegador. Si el external_id ya existía (otro dispositivo,
+  // o volvió a vincular), OneSignal pasa la suscripción a ese usuario y descarta las etiquetas del usuario anónimo
+  // (probado: el anónimo tenía pref_concursos y pref_blog en 1 y después del login quedaron {}). Por eso se leen
+  // antes y se le suman al usuario las pref_* que no tenga; las que ya tiene en el servidor no se tocan.
+  // Una sola vez por página y external_id: todos los que llaman comparten la misma promesa.
+  var loginEnCurso = null, loginExt = null;
+  function osLogin(OneSignal, ext) {
+    if (loginEnCurso && loginExt === ext) return loginEnCurso;
+    loginExt = ext;
+    var previo = {};
+    try { if (!(OneSignal.User && OneSignal.User.externalId)) previo = OneSignal.User.getTags() || {}; } catch (e) {}   // solo del anónimo
+    loginEnCurso = OneSignal.login(ext).then(function () {
+      try { sessionStorage.setItem(K_OS, ext); } catch (e) {}
+      return new Promise(function (ok) { setTimeout(ok, 1500); });   // el SDK trae del servidor las etiquetas del usuario
+    }).then(function () {
+      var ahora = {}, faltan = {}, n = 0;
+      try { ahora = OneSignal.User.getTags() || {}; } catch (e) {}
+      Object.keys(previo).forEach(function (k) {
+        if (/^pref_/.test(k) && ahora[k] == null) { faltan[k] = String(previo[k]); n++; }
+      });
+      if (n && OneSignal.User && OneSignal.User.addTags) { try { OneSignal.User.addTags(faltan); } catch (e) {} }
+      var t = {}, k;
+      for (k in faltan) t[k] = faltan[k];
+      for (k in ahora) t[k] = ahora[k];
+      guardarPrefc(t);
+      return t;
+    });
+    loginEnCurso.catch(function () { loginEnCurso = null; });
+    return loginEnCurso;
+  }
   // Guarda pref_concursos en localStorage para que el recuadro sepa si los avisos de concursos están activos.
-  function leerPrefs(OneSignal) {
-    var t = {};
-    try { t = (OneSignal.User && OneSignal.User.getTags && OneSignal.User.getTags()) || {}; } catch (e) {}
+  function guardarPrefc(t) {
     var antes = ls(K_PREFC), v = String(t.pref_concursos == null ? '' : t.pref_concursos);
     if (v === '1' || v === '0') lsSet(K_PREFC, v); else lsDel(K_PREFC);
     if (ls(K_PREFC) !== antes) pintar();
-    return t;
   }
   // Igual que osVincular, pero siempre (sin el "una vez por sesión") y sumando etiquetas al usuario identificado.
   // Primero login y después tags: si el usuario ya existía en OneSignal, lo anónimo no se le pasa.
@@ -73,8 +94,7 @@ try {
     try {
       var ext = await idExterno(); if (!ext) return;
       osCola(function (OneSignal) {
-        return OneSignal.login(ext).then(function () {
-          try { sessionStorage.setItem(K_OS, ext); } catch (e) {}
+        return osLogin(OneSignal, ext).then(function () {   // lo elegido ahora pisa lo conservado
           if (tags && tags.pref_concursos != null) lsSet(K_PREFC, String(tags.pref_concursos));
           if (tags && OneSignal.User && OneSignal.User.addTags) return OneSignal.User.addTags(tags);
         });
@@ -82,6 +102,7 @@ try {
     } catch (e) {}
   }
   function osDesvincular() {
+    loginEnCurso = null; loginExt = null;
     try { sessionStorage.removeItem(K_OS); } catch (e) {}
     osCola(function (OneSignal) { return OneSignal.logout(); });
   }
@@ -446,15 +467,13 @@ try {
     try {
       var ext = await idExterno(); if (!ext) return;
       osCola(function (OneSignal) {
-        return OneSignal.login(ext).then(function () {
-          setTimeout(function () {
-            var t = leerPrefs(OneSignal), pc = t.pref_concursos == null ? '' : String(t.pref_concursos);
-            if (pc === '0') mostrarPreferencias('guardar', t.pref_blog);   // eligió explícitamente sin concursos
-            else if (pc !== '1') {   // sin etiqueta (suscriptor viejo): ya aceptó avisos y concursos es obligatorio al sincronizar
-              lsSet(K_PREFC, '1');
-              if (OneSignal.User && OneSignal.User.addTags) OneSignal.User.addTags({ pref_concursos: '1' });
-            }
-          }, 1500);
+        return osLogin(OneSignal, ext).then(function (t) {
+          var pc = t.pref_concursos == null ? '' : String(t.pref_concursos);
+          if (pc === '0') mostrarPreferencias('guardar', t.pref_blog);   // eligió explícitamente sin concursos
+          else if (pc !== '1') {   // sin etiqueta (suscriptor viejo): ya aceptó avisos y concursos es obligatorio al sincronizar
+            lsSet(K_PREFC, '1');
+            if (OneSignal.User && OneSignal.User.addTags) OneSignal.User.addTags({ pref_concursos: '1' });
+          }
         });
       });
     } catch (e) {}
