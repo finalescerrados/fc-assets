@@ -1,4 +1,4 @@
-/*! finalescerrados.com · fc-concursos.js · fc-assets v10.35 · sincronización de favoritos (Firebase) y relacionados de los listados.
+/*! finalescerrados.com · fc-concursos.js · fc-assets v10.36 · sincronización de favoritos (Firebase) y relacionados de los listados.
    Cada sentencia ejecutable va en su propio try/catch: si un bloque falla, los demás siguen corriendo. */
 
 /* ── bloque 1/2 · sincronización de favoritos con Firebase (fcSync) ── */
@@ -34,6 +34,10 @@ try {
   var K_OS = 'fc_os_ext', K_OS_OFF = 'fc_os_off';
   var K_PREFC = 'fc_os_prefc';   // copia local de la etiqueta pref_concursos ('1' / '0'; sin valor = no la tiene)
   var avisoPend = false;   // tocó "Avisarme" sin estar sincronizado: falta elegir Google o código
+  function identidad() { var a = auth(), c = codigo(); return a ? 'g:' + a.uid : (c ? 'k:' + c : ''); }
+  // Las tareas de la cola pueden correr segundos después (esperan a que cargue OneSignal). Si para entonces el
+  // usuario desvinculó o cambió de cuenta, no hay que identificarlo: se descarta la tarea.
+  function sigueIgual(id0) { return !!id0 && identidad() === id0; }
   async function idExterno() {
     var a = auth(), c = codigo(), base = a ? 'g:' + a.uid : (c ? 'k:' + c : null);
     if (!base || !window.crypto || !crypto.subtle) return null;
@@ -61,7 +65,8 @@ try {
       if (ls(K_OS_OFF) === '1') return;   // pidió "Dejar de avisarme"
       var ext = await idExterno(); if (!ext) return;
       try { if (sessionStorage.getItem(K_OS) === ext) return; } catch (e) {}   // una vez por sesión
-      osCola(function (OneSignal) { return osLogin(OneSignal, ext); });
+      var id0 = identidad();
+      osCola(function (OneSignal) { if (!sigueIgual(id0)) return; return osLogin(OneSignal, ext); });
     } catch (e) {}
   }
   // Login en OneSignal conservando las preferencias del navegador. Si el external_id ya existía (otro dispositivo,
@@ -105,7 +110,9 @@ try {
   async function osVincularCon(tags) {
     try {
       var ext = await idExterno(); if (!ext) return;
+      var id0 = identidad();
       osCola(function (OneSignal) {
+        if (!sigueIgual(id0)) return;
         return osLogin(OneSignal, ext).then(function () {   // lo elegido ahora pisa lo conservado
           if (tags && tags.pref_concursos != null) lsSet(K_PREFC, String(tags.pref_concursos));
           if (tags && OneSignal.User && OneSignal.User.addTags) return OneSignal.User.addTags(tags);
@@ -129,6 +136,7 @@ try {
       }
       var paso = salio ? Promise.resolve() : OneSignal.logout().then(function () {
         salio = true;
+        try { sessionStorage.removeItem(K_OS); } catch (e) {}   // por si un login de la cola terminó antes
         return new Promise(function (ok) { setTimeout(ok, 1000); });
       });
       return paso.then(function () {
@@ -496,7 +504,9 @@ try {
   async function revisarPrefs() {
     try {
       var ext = await idExterno(); if (!ext) return;
+      var id0 = identidad();
       osCola(function (OneSignal) {
+        if (!sigueIgual(id0)) return;
         return osLogin(OneSignal, ext).then(function (t) {
           var pc = t.pref_concursos == null ? '' : String(t.pref_concursos);
           if (pc === '0') mostrarPreferencias('guardar', t.pref_blog);   // eligió explícitamente sin concursos
