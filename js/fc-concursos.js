@@ -1,4 +1,4 @@
-/*! finalescerrados.com · fc-concursos.js · fc-assets v10.29 · sincronización de favoritos (Firebase) y relacionados de los listados.
+/*! finalescerrados.com · fc-concursos.js · fc-assets v10.30 · sincronización de favoritos (Firebase) y relacionados de los listados.
    Cada sentencia ejecutable va en su propio try/catch: si un bloque falla, los demás siguen corriendo. */
 
 /* ── bloque 1/2 · sincronización de favoritos con Firebase (fcSync) ── */
@@ -32,6 +32,7 @@ try {
   // Mismo cálculo que idExterno() en ConcursosNotificarFavoritos.py. Si OneSignal (Zaraz) todavía no
   // cargó, el pedido queda en la cola OneSignalDeferred y corre cuando llegue el SDK.
   var K_OS = 'fc_os_ext', K_OS_OFF = 'fc_os_off';
+  var K_PREFC = 'fc_os_prefc';   // copia local de la etiqueta pref_concursos ('1' / '0'; sin valor = no la tiene)
   var avisoPend = false;   // tocó "Avisarme" sin estar sincronizado: falta elegir Google o código
   async function idExterno() {
     var a = auth(), c = codigo(), base = a ? 'g:' + a.uid : (c ? 'k:' + c : null);
@@ -51,9 +52,20 @@ try {
       osCola(function (OneSignal) {
         return OneSignal.login(ext).then(function () {
           try { sessionStorage.setItem(K_OS, ext); } catch (e) {}
+          setTimeout(function () { leerPrefs(OneSignal); }, 1500);
         });
       });
     } catch (e) {}
+  }
+  // Etiquetas del usuario de OneSignal ya identificado (tras el login el SDK las trae del servidor).
+  // Guarda pref_concursos en localStorage para que el recuadro sepa si los avisos de concursos están activos.
+  function leerPrefs(OneSignal) {
+    var t = {};
+    try { t = (OneSignal.User && OneSignal.User.getTags && OneSignal.User.getTags()) || {}; } catch (e) {}
+    var antes = ls(K_PREFC), v = String(t.pref_concursos == null ? '' : t.pref_concursos);
+    if (v === '1' || v === '0') lsSet(K_PREFC, v); else lsDel(K_PREFC);
+    if (ls(K_PREFC) !== antes) pintar();
+    return t;
   }
   // Igual que osVincular, pero siempre (sin el "una vez por sesión") y sumando etiquetas al usuario identificado.
   // Primero login y después tags: si el usuario ya existía en OneSignal, lo anónimo no se le pasa.
@@ -63,6 +75,7 @@ try {
       osCola(function (OneSignal) {
         return OneSignal.login(ext).then(function () {
           try { sessionStorage.setItem(K_OS, ext); } catch (e) {}
+          if (tags && tags.pref_concursos != null) lsSet(K_PREFC, String(tags.pref_concursos));
           if (tags && OneSignal.User && OneSignal.User.addTags) return OneSignal.User.addTags(tags);
         });
       });
@@ -87,7 +100,7 @@ try {
     if (esIOSsinApp()) return 'ios';
     if (!('Notification' in window) || !('serviceWorker' in navigator)) return 'nosoporta';
     if (Notification.permission === 'denied') return 'bloqueado';
-    if (vinculado() && Notification.permission === 'granted' && ls(K_OS_OFF) !== '1') return 'activo';
+    if (vinculado() && Notification.permission === 'granted' && ls(K_OS_OFF) !== '1') return ls(K_PREFC) === '0' ? 'sinconcursos' : 'activo';
     return 'inactivo';
   }
   function htmlAvisos() {
@@ -97,6 +110,13 @@ try {
       return '<p class="fc-av-linea"><i class="fa-solid fa-bell fc-av-ok"></i> <strong>Avisos activados</strong>'
         + ' <span class="fc-av-sub">\u00b7 una semana antes y en los \u00faltimos d\u00edas de cada favorito</span>'
         + ' <a href="#" class="fc-av-mini" data-fcs="noavisar">Dejar de avisarme</a></p>';
+    }
+    if (est === 'sinconcursos') {
+      return '<div class="fc-av-cta"><i class="fa-solid fa-bell fc-av-ico"></i><div>'
+        + '<p class="fc-av-tit"><strong>Tus avisos est\u00e1n activados solo para el blog</strong></p>'
+        + '<p class="fc-av-sub">Activ\u00e1 tambi\u00e9n los de concursos y te avisamos una semana antes y en los \u00faltimos d\u00edas de cada favorito.</p>'
+        + '<button type="button" class="btn-borrar btn-verde" data-fcs="concursos"><i class="fa-solid fa-bell"></i> Avisarme de concursos</button>'
+        + '</div></div>';
     }
     if (est === 'bloqueado') {
       return '<p class="fc-av-linea fc-av-sub"><i class="fa-solid fa-triangle-exclamation fc-av-warn"></i> '
@@ -348,7 +368,7 @@ try {
   function empezarDeCero() { lsDel(K_SNAP); lsDel(K_PEND); }
 
   function desvincular(silencioso) {
-    lsDel(K_AUTH); lsDel(K_COD); lsDel(K_SNAP); lsDel(K_PEND);
+    lsDel(K_AUTH); lsDel(K_COD); lsDel(K_SNAP); lsDel(K_PEND); lsDel(K_PREFC);
     osDesvincular();
     if (!silencioso) toast('Este dispositivo dejó de sincronizar. Tus concursos siguen guardados acá.');
     pintar();
@@ -408,9 +428,28 @@ try {
     iniciarGIS().then(function () { google.accounts.id.prompt(); }).catch(function () {});
   }
   function avisarVinculado(pidioAvisos) {
-    if (pidioAvisos) osVincularCon({ pref_concursos: '1' });   // venía de "Avisarme antes del cierre"
-    if (puedePedirAvisos()) mostrarPreferencias(); else cerrarInvitacion();
+    if (pidioAvisos) { osVincularCon({ pref_concursos: '1' }); cerrarInvitacion(); }   // venía de "Avisarme antes del cierre"
+    else if (puedePedirAvisos()) mostrarPreferencias('pedir');
+    else { cerrarInvitacion(); if (avisosConcedidos()) revisarPrefs(); }
     try { window.dispatchEvent(new CustomEvent('fc-sync-vinculado')); } catch (e) {}
+  }
+  function avisosConcedidos() {
+    return !esIOSsinApp() && ('Notification' in window) && Notification.permission === 'granted' && ls(K_OS_OFF) !== '1';
+  }
+  // Ya tenía las notificaciones activadas: si no tiene las de concursos (p. ej. eligió solo Blog en el cartel de
+  // OneSignal), se le ofrece sumarlas sin volver a pedir el permiso.
+  async function revisarPrefs() {
+    try {
+      var ext = await idExterno(); if (!ext) return;
+      osCola(function (OneSignal) {
+        return OneSignal.login(ext).then(function () {
+          setTimeout(function () {
+            var t = leerPrefs(OneSignal);
+            if (String(t.pref_concursos) !== '1') mostrarPreferencias('guardar', t.pref_blog);
+          }, 1500);
+        });
+      });
+    } catch (e) {}
   }
   // Solo si el navegador todavía no respondió el permiso (ni lo aceptó ni lo bloqueó)
   function puedePedirAvisos() {
@@ -459,6 +498,7 @@ try {
         var acc = b.getAttribute('data-inv');
         if (acc === 'cerrar') cerrarInvitacion();
         else if (acc === 'avisos') activarDesdeTarjeta();
+        else if (acc === 'guardar') guardarDesdeTarjeta();
       });
       document.body.appendChild(c);
     }
@@ -469,26 +509,44 @@ try {
     });
     return c;
   }
-  function mostrarPreferencias() {
+  // modo 'pedir': todav\u00eda no respondi\u00f3 el permiso; 'guardar': ya lo concedi\u00f3, solo se eligen las etiquetas
+  function mostrarPreferencias(modo, blogActual) {
+    var guardar = modo === 'guardar', blogOn = String(blogActual) !== '0';
     var chk = function (tag, txt, sub, fijo) {   // fijo: marcado y sin poder desmarcar (es el motivo de sincronizar)
-      return '<label class="fc-inv-op' + (fijo ? ' fc-inv-fijo' : '') + '"><input type="checkbox" data-tag="' + tag + '" checked' + (fijo ? ' disabled' : '') + '> <span><b>' + txt + '</b> ' + sub + '</span></label>';
+      var on = fijo || tag !== 'pref_blog' || blogOn;
+      return '<label class="fc-inv-op' + (fijo ? ' fc-inv-fijo' : '') + '"><input type="checkbox" data-tag="' + tag + '"' + (on ? ' checked' : '') + (fijo ? ' disabled' : '') + '> <span><b>' + txt + '</b> ' + sub + '</span></label>';
     };
     tarjeta('<button type="button" class="fc-inv-x" data-inv="cerrar" aria-label="Cerrar">\u00d7</button>'
       + '<div class="fc-inv-cab"><span class="fc-inv-ico">' + ICO_CAMPANA + '</span><div>'
       + '<strong id="fc-inv-tit">\u00a1Listo, tus concursos est\u00e1n en la nube!</strong>'
-      + '<p>\u00bfQu\u00e9 quer\u00e9s que te avisemos?</p></div></div>'
+      + '<p>' + (guardar ? 'Ya ten\u00e9s los avisos activados. \u00bfQu\u00e9 quer\u00e9s recibir?' : '\u00bfQu\u00e9 quer\u00e9s que te avisemos?') + '</p></div></div>'
       + '<div class="fc-inv-ops">'
       + chk('pref_concursos', 'Concursos:', 'tus favoritos antes del cierre y los resultados de donde participaste', true)
       + chk('pref_blog', 'Blog:', 'art\u00edculos nuevos')
       + '</div>'
-      + '<button type="button" class="fc-inv-btn" data-inv="avisos">Activar avisos</button>'
+      + '<button type="button" class="fc-inv-btn" data-inv="' + (guardar ? 'guardar' : 'avisos') + '">' + (guardar ? 'Guardar' : 'Activar avisos') + '</button>'
       + '<div class="fc-inv-pie fc-inv-pie-der"><button type="button" data-inv="cerrar">Ahora no</button></div>');
   }
-  async function activarDesdeTarjeta() {
-    var c = document.getElementById('fc-inv'); if (!c) return;
+  function tagsDeTarjeta(c) {
     var tags = {};
     [].forEach.call(c.querySelectorAll('input[data-tag]'), function (i) { tags[i.getAttribute('data-tag')] = i.checked ? '1' : '0'; });
     tags.pref_concursos = '1';   // siempre: es lo que se activa al sincronizar
+    return tags;
+  }
+  function avisoListo(tags) {
+    toast('Listo: te vamos a avisar antes de que cierren tus favoritos' + (tags.pref_blog === '1' ? ' y cuando haya art\u00edculos nuevos' : ''));
+  }
+  function guardarDesdeTarjeta() {
+    var c = document.getElementById('fc-inv'); if (!c) return;
+    var tags = tagsDeTarjeta(c);
+    cerrarInvitacion();
+    osVincularCon(tags);
+    avisoListo(tags);
+    pintar();
+  }
+  async function activarDesdeTarjeta() {
+    var c = document.getElementById('fc-inv'); if (!c) return;
+    var tags = tagsDeTarjeta(c);
     var permiso = await pedirPermiso();
     cerrarInvitacion();
     if (permiso !== 'granted') {
@@ -496,7 +554,7 @@ try {
       pintar(); return;
     }
     osVincularCon(tags);
-    toast('Listo: te vamos a avisar antes de que cierren tus favoritos' + (tags.pref_blog === '1' ? ' y cuando haya art\u00edculos nuevos' : ''));
+    avisoListo(tags);
     pintar();
   }
   function invitar(estadoNuevo) {
@@ -605,6 +663,7 @@ try {
     if (acc === 'borrar') { borrarNube(); return; }
     if (acc === 'avisar') { activarAvisos(); return; }
     if (acc === 'noavisar') { desactivarAvisos(); return; }
+    if (acc === 'concursos') { osVincularCon({ pref_concursos: '1' }); lsSet(K_PREFC, '1'); toast('Listo: te vamos a avisar antes de que cierren tus favoritos'); pintar(); return; }
     if (acc === 'avisocod') { avisoPend = false; vincularCodigo(nuevoCodigo(), 'aviso'); return; }
     if (acc === 'avisocancel') { avisoPend = false; pintar(); return; }
     if (acc === 'ahora') sincronizar(true);
