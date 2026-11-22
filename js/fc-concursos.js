@@ -1,4 +1,4 @@
-/*! finalescerrados.com · fc-concursos.js · fc-assets v10.36 · sincronización de favoritos (Firebase) y relacionados de los listados.
+/*! finalescerrados.com · fc-concursos.js · fc-assets v10.39 · sincronización de favoritos (Firebase) y relacionados de los listados.
    Cada sentencia ejecutable va en su propio try/catch: si un bloque falla, los demás siguen corriendo. */
 
 /* ── bloque 1/2 · sincronización de favoritos con Firebase (fcSync) ── */
@@ -522,6 +522,22 @@ try {
   function puedePedirAvisos() {
     return !esIOSsinApp() && ('Notification' in window) && ('serviceWorker' in navigator) && Notification.permission === 'default';
   }
+  // Para otras páginas (Flechazo): en qué punto están los avisos de concursos de este navegador.
+  // 'sincuenta' no vinculado · 'pedir' nunca respondió el permiso · 'guardar' tiene avisos pero eligió sin concursos
+  // · 'activo' ya los recibe · 'no' bloqueados, iPhone sin la web instalada o pidió "Dejar de avisarme"
+  function estadoAvisos() {
+    if (!vinculado()) return 'sincuenta';
+    if (puedePedirAvisos()) return 'pedir';
+    if (avisosConcedidos()) return ls(K_PREFC) === '0' ? 'guardar' : 'activo';
+    return 'no';
+  }
+  // Abre la tarjeta de preferencias que corresponda (llamar desde un clic: 'pedir' pide el permiso)
+  function ofrecerAvisos() {
+    var e = estadoAvisos();
+    if (e === 'pedir') mostrarPreferencias('pedir');
+    else if (e === 'guardar') revisarPrefs();   // lee las etiquetas del servidor y muestra "Guardar" si hace falta
+    return e;
+  }
 
   // ---------- Invitación al guardar algo sin estar sincronizado (una vez por sesión) ----------
   var ICO_NUBE = '<svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M17.5 19H7a5 5 0 1 1 1.1-9.9A6 6 0 0 1 19.5 11a4 4 0 0 1-2 8z"/><path d="M12 16v-5M9.5 13.5 12 11l2.5 2.5"/></svg>';
@@ -781,7 +797,8 @@ try {
 
   window.fcSync = {
     sincronizar: function () { return sincronizar(true); }, desvincular: desvincular,
-    vinculado: vinculado, invitar: invitar, botonGoogle: montarBotonGoogle
+    vinculado: vinculado, invitar: invitar, botonGoogle: montarBotonGoogle,
+    estadoAvisos: estadoAvisos, ofrecerAvisos: ofrecerAvisos
   };
 })();
 } catch (e) { console.error('[fc-concursos.js bloque 1]', e); }
