@@ -1797,7 +1797,7 @@ window.addEventListener('load', function() {
     'puerto rico':'PR','estados unidos':'US','ee.uu.':'US','eeuu':'US','usa':'US',
     'reino unido':'GB','inglaterra':'GB','uk':'GB','francia':'FR','alemania':'DE',
     'italia':'IT','portugal':'PT','suiza':'CH','bélgica':'BE','luxemburgo':'LU',
-    'andorra':'AD','eslovenia':'SI','serbia':'RS','rusia':'RU','israel':'IL',
+    'andorra':'AD','eslovenia':'SI','serbia':'RS','rusia':'RU','rumania':'RO','rumanía':'RO','israel':'IL',
     'japón':'JP','corea del sur':'KR','australia':'AU','brasil':'BR','canadá':'CA',
     'filipinas':'PH','guinea ecuatorial':'GQ'
   };
