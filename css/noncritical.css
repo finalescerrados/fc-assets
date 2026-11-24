@@ -26,3 +26,4 @@ body.dark-mode :where(a,button,input,select,textarea,summary,[tabindex]):focus-v
   .fc-mega-pie{flex-direction:column}
   .fc-mega-pie>a{text-align:left}
 }
+/* Recuadro RESULTADO de las fichas (/p/cl-): va debajo del anuncio que fc-cl.js pone después de la tabla de detalles. Margen propio arriba (si el anuncio no carga, no se pega a la tabla) y abajo (separación con NOTA EDITORIAL o BASES). Las fichas viejas traen 3 <br /> delante del recuadro: se ocultan */.alert.resultado-concurso{margin:1.2em 0 1.6em}.post-body br:has(+.resultado-concurso),.post-body br:has(+br+.resultado-concurso),.post-body br:has(+br+br+.resultado-concurso){display:none}

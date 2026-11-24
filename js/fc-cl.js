@@ -345,8 +345,10 @@ try {
     if (!content) return;
 
     // Intentar localizar el recuadro de concurso
-    // Si hay RESULTADO, el anuncio va después del resultado (no entre el recuadro y el resultado)
-    var recuadro = content.querySelector('div.resultado-concurso') || content.querySelector('div.recuadro-concurso');
+    // El anuncio va siempre justo después de la tabla de detalles (div.recuadro-concurso); si la ficha tiene
+    // RESULTADO, el resultado queda debajo del anuncio (los <br /> que traen las fichas viejas delante del
+    // resultado los oculta noncritical.css).
+    var recuadro = content.querySelector('div.recuadro-concurso');
     if (recuadro) {
       // Si existe, lo usamos como referencia
       insertarDespuesDe(recuadro);
