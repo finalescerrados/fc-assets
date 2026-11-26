@@ -1,4 +1,4 @@
-/*! finalescerrados.com · fc-concursos.js · fc-assets v10.45 · sincronización de favoritos (Firebase) y relacionados de los listados.
+/*! finalescerrados.com · fc-concursos.js · fc-assets v10.46 · sincronización de favoritos (Firebase) y relacionados de los listados.
    Cada sentencia ejecutable va en su propio try/catch: si un bloque falla, los demás siguen corriendo. */
 
 /* ── bloque 1/2 · sincronización de favoritos con Firebase (fcSync) ── */
@@ -247,22 +247,32 @@ try {
     + '.fc-mail-form input{flex:1 1 200px;min-width:0;box-sizing:border-box;padding:10px 16px;border-radius:30px;border:2px solid #ddd;font:inherit;font-size:15px;outline:none;text-transform:none;background:#fff;color:#1a1a1a}'
     + '.fc-mail-form input:focus{border-color:#2e8b57}'
     + '#fc-inv .fc-mail-form .fc-inv-btn{flex:1 1 100%}'
+    + '.fc-mail-nl{display:flex;gap:6px;align-items:flex-start;flex:1 1 100%;font-size:13px;line-height:1.35;margin:4px 0 2px;cursor:pointer}'
+    + '.fc-mail-nl input{margin:2px 0 0;flex:0 0 auto}'
     + 'body.dark-mode .fc-mail-form input{background:#2a2a2a;color:#eee;border-color:#444}';
   function cssMail() {
     if (document.getElementById('fc-mail-css')) return;
     var st = document.createElement('style'); st.id = 'fc-mail-css'; st.textContent = CSS_MAIL; document.head.appendChild(st);
   }
+  // Casilla del newsletter (El sobre cerrado, MailRelay grupo General): marcada de entrada; queda en mailg/mailk como n
+  // y el pipeline da de alta a quien la deja tildada (ConcursosNotificarFavoritos, corrida de las 00:00)
+  var HTML_NL = '<label class="fc-mail-nl"><input type="checkbox" checked> <span>Tambi\u00e9n quiero recibir <i>El sobre cerrado</i>, '
+    + 'el newsletter de Finales Cerrados (pod\u00e9s darte de baja desde cualquier env\u00edo)</span></label>';
   // Bot\u00f3n (Google) o campo de correo (c\u00f3digo). attr: 'fcs' (recuadro) o 'inv' (tarjeta)
   function formMail(attr) {
     cssMail();
     var clase = attr === 'inv' ? 'fc-inv-btn' : 'btn-borrar btn-verde';
     if (auth()) {
-      return '<button type="button" class="' + clase + '" data-' + attr + '="mail"><i class="fa-solid fa-envelope"></i> Avisarme a '
-        + esc((auth() || {}).email || 'mi correo') + '</button>';
+      return '<div class="fc-mail-form"><button type="button" class="' + clase + '" data-' + attr + '="mail"><i class="fa-solid fa-envelope"></i> Avisarme a '
+        + esc((auth() || {}).email || 'mi correo') + '</button>' + HTML_NL + '</div>';
     }
     return '<form class="fc-mail-form" novalidate><input type="email" autocomplete="email" inputmode="email" placeholder="Tu correo" aria-label="Tu correo"'
       + (mailDe() ? ' value="' + esc(mailDe()) + '"' : '') + '>'
-      + '<button type="submit" class="' + clase + '"><i class="fa-solid fa-envelope"></i> Avisarme por mail</button></form>';
+      + '<button type="submit" class="' + clase + '"><i class="fa-solid fa-envelope"></i> Avisarme por mail</button>' + HTML_NL + '</form>';
+  }
+  function quiereNewsletter(desde) {
+    var c = desde && desde.querySelector ? desde.querySelector('.fc-mail-nl input') : null;
+    return !!(c && c.checked);
   }
   function htmlMailRecuadro(sinPush) {
     if (!vinculado()) return sinPush ? '<p class="fc-av-sub">Para eso, guard\u00e1 tu lista en la nube (ac\u00e1 abajo).</p>' : '';
@@ -296,23 +306,23 @@ try {
       if (v !== antes) pintar();
     } catch (e) {}
   }
-  async function activarMail(correo) {
-    var a = auth();
+  async function activarMail(correo, newsletter) {
+    var a = auth(), nl = !!newsletter;
     try {
       var url = await urlMail(); if (!url) throw new Error('sin destino');
       if (a) {
-        var r = await fetch(url, { method: 'PUT', body: JSON.stringify({ ok: true, t: { '.sv': 'timestamp' } }) });
+        var r = await fetch(url, { method: 'PUT', body: JSON.stringify({ ok: true, n: nl, t: { '.sv': 'timestamp' } }) });
         if (!r.ok) throw new Error('mailg');
         lsSet(K_MAIL, 'g');
-        medir('mail_activado', { via: 'google' });
+        medir('mail_activado', { via: 'google', newsletter: nl ? '1' : '0' });
         toast('Listo: te vamos a avisar por mail' + (a.email ? ' a ' + a.email : ''));
       } else {
         correo = String(correo || '').trim().toLowerCase();
         if (!MAIL_OK.test(correo) || correo.length > 120) { toast('Revis\u00e1 el correo: no parece v\u00e1lido.', 'warning'); return false; }
-        var r2 = await fetch(url, { method: 'PATCH', body: JSON.stringify({ m: correo, t: { '.sv': 'timestamp' } }) });
+        var r2 = await fetch(url, { method: 'PATCH', body: JSON.stringify({ m: correo, n: nl, t: { '.sv': 'timestamp' } }) });
         if (!r2.ok) throw new Error('mailk');
         lsSet(K_MAIL, 'k:p:' + correo);
-        medir('mail_activado', { via: 'codigo' });
+        medir('mail_activado', { via: 'codigo', newsletter: nl ? '1' : '0' });
         if (await pedirConfirmacion()) toast('Te mandamos un mail a ' + correo + '. Confirmalo para empezar a recibir los avisos.');
         refrescarMail();   // si ese correo ya estaba confirmado, queda activo
       }
@@ -756,7 +766,7 @@ try {
         else if (acc === 'avisarsync') avisarYGuardar();
         else if (acc === 'sologuardar') { avisoPend = false; mostrarGuardar(c.getAttribute('data-motivo') === 'participe'); }
         else if (acc === 'avisocod') { avisoPend = false; vincularCodigo(nuevoCodigo(), 'aviso'); }
-        else if (acc === 'mail') { activarMail().then(function (ok) { if (ok) cerrarInvitacion(); }); }
+        else if (acc === 'mail') { activarMail(null, quiereNewsletter(c)).then(function (ok) { if (ok) cerrarInvitacion(); }); }
       });
       document.body.appendChild(c);
     }
@@ -1017,7 +1027,7 @@ try {
     if (acc === 'avisocod') { avisoPend = false; vincularCodigo(nuevoCodigo(), 'aviso'); return; }
     if (acc === 'avisocancel') { avisoPend = false; pintar(); return; }
     if (acc === 'vermail') { verMail = true; pintar(); return; }
-    if (acc === 'mail') { activarMail(); return; }
+    if (acc === 'mail') { activarMail(null, quiereNewsletter(b.closest('.fc-mail-form'))); return; }
     if (acc === 'nomail') { desactivarMail(); return; }
     if (acc === 'mailreenv') { pedirConfirmacion(true); return; }
     if (acc === 'ahora') sincronizar(true);
@@ -1032,7 +1042,7 @@ try {
       ev.preventDefault();
       var enTarjeta = !!(f.closest && f.closest('#fc-inv'));
       var btn = f.querySelector('button'); if (btn) btn.disabled = true;
-      activarMail(f.querySelector('input').value).then(function (ok) {
+      activarMail(f.querySelector('input[type="email"]').value, quiereNewsletter(f)).then(function (ok) {
         if (btn) btn.disabled = false;
         if (ok && enTarjeta) cerrarInvitacion();
       });
