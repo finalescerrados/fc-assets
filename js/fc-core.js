@@ -856,25 +856,43 @@ window.addEventListener('load', function() {
         if(typeof mostrarToast === 'function'){
             var irFavs = '/p/mis-concursos-favoritos.html#lista-favoritos';
             var irPart = '/p/mis-concursos-favoritos.html#lista-participados';
+            // v10.44: si este navegador no recibe los avisos de concursos pero podría (no es iPhone sin la web
+            // instalada ni los bloqueó), el toast lo dice y lleva al recuadro de avisos de Mis favoritos.
+            var sumaAvisos = '';
+            try {
+                var ios = /iPad|iPhone|iPod/.test(navigator.userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+                var app = navigator.standalone === true || (window.matchMedia && matchMedia('(display-mode: standalone)').matches);
+                var puede = !(ios && !app) && ('Notification' in window) && ('serviceWorker' in navigator) && Notification.permission !== 'denied';
+                var sinc = !!(localStorage.getItem('fc_sync_auth') || localStorage.getItem('fc_sync_codigo'));
+                var activos = sinc && Notification.permission === 'granted' && localStorage.getItem('fc_os_off') !== '1' && localStorage.getItem('fc_os_prefc') !== '0';
+                if (puede && !activos) sumaAvisos = ' \u00b7 Activ\u00e1 los avisos para que no se te pase';
+            } catch (e) {}
+            if (sumaAvisos) {
+                var irAvisos = function() {
+                    if (typeof fcTrack === 'function') { try { fcTrack('toast_avisos_clic', {}); } catch (e) {} }
+                    window.location.href = '/p/mis-concursos-favoritos.html#fc-sync-box';
+                };
+                irFavs = irAvisos; irPart = irAvisos;
+            }
             if(countHoy > 0){
                 var msgHoy = '⚠️ ' + (countHoy > 1
                     ? countHoy + ' concursos favoritos vencen HOY'
                     : '1 concurso favorito vence HOY');
-                mostrarToast(msgHoy, 'warning', irFavs);
+                mostrarToast(msgHoy + sumaAvisos, 'warning', irFavs);
             }
             if(countSemana > 0){
                 var msgSemana = countSemana + ' concurso' + (countSemana > 1 ? 's' : '') + ' favorito' + (countSemana > 1 ? 's' : '') + ' vence' + (countSemana > 1 ? 'n' : '') + ' esta semana';
-                mostrarToast(msgSemana, 'warning', irFavs);
+                mostrarToast(msgSemana + sumaAvisos, 'warning', irFavs);
             }
             if(falloHoy > 0){
                 mostrarToast('\ud83c\udfc6 ' + (falloHoy > 1
                     ? 'Hoy se conoce el fallo de ' + falloHoy + ' concursos en los que participaste'
-                    : 'Hoy se conoce el fallo de un concurso en el que participaste'), 'info', irPart);
+                    : 'Hoy se conoce el fallo de un concurso en el que participaste') + (sumaAvisos ? ' \u00b7 Activ\u00e1 los avisos y te contamos el resultado' : ''), 'info', irPart);
             }
             if(falloSemana > 0){
-                mostrarToast(falloSemana > 1
+                mostrarToast((falloSemana > 1
                     ? 'Esta semana se conoce el fallo de ' + falloSemana + ' concursos en los que participaste'
-                    : 'Esta semana se conoce el fallo de un concurso en el que participaste', 'info', irPart);
+                    : 'Esta semana se conoce el fallo de un concurso en el que participaste') + (sumaAvisos ? ' \u00b7 Activ\u00e1 los avisos y te contamos el resultado' : ''), 'info', irPart);
             }
             if(countHoy > 0 || countSemana > 0 || falloHoy > 0 || falloSemana > 0){
                 sessionStorage.setItem('toastMostrado', 'true');
