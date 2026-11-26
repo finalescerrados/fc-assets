@@ -1,4 +1,4 @@
-/*! finalescerrados.com · fc-concursos.js · fc-assets v10.44 · sincronización de favoritos (Firebase) y relacionados de los listados.
+/*! finalescerrados.com · fc-concursos.js · fc-assets v10.45 · sincronización de favoritos (Firebase) y relacionados de los listados.
    Cada sentencia ejecutable va en su propio try/catch: si un bloque falla, los demás siguen corriendo. */
 
 /* ── bloque 1/2 · sincronización de favoritos con Firebase (fcSync) ── */
@@ -185,7 +185,8 @@ try {
     if (est === 'activo') {
       return '<p class="fc-av-linea"><i class="fa-solid fa-bell fc-av-ok"></i> <strong>Avisos activados</strong>'
         + ' <span class="fc-av-sub">\u00b7 una semana antes y en los \u00faltimos d\u00edas de cada favorito</span>'
-        + ' <a href="#" class="fc-av-mini" data-fcs="noavisar">Dejar de avisarme</a></p>';
+        + ' <a href="#" class="fc-av-mini" data-fcs="noavisar">Dejar de avisarme</a></p>'
+        + (mailActivo() || mailPend() ? htmlMailRecuadro() : '');
     }
     if (est === 'sinconcursos') {
       return '<div class="fc-av-cta"><i class="fa-solid fa-bell fc-av-ico"></i><div>'
@@ -194,15 +195,23 @@ try {
         + '<button type="button" class="btn-borrar btn-verde" data-fcs="concursos"><i class="fa-solid fa-bell"></i> Avisarme de concursos</button>'
         + '</div></div>';
     }
+    // Sin notificaciones posibles en este navegador: los avisos van por mail
     if (est === 'bloqueado') {
       return '<p class="fc-av-linea fc-av-sub"><i class="fa-solid fa-triangle-exclamation fc-av-warn"></i> '
-        + 'Bloqueaste las notificaciones de este sitio. Habilitalas desde el candado de la barra de direcciones y volv\u00e9 a esta p\u00e1gina.</p>';
+        + 'Bloqueaste las notificaciones de este sitio. Pod\u00e9s habilitarlas desde el candado de la barra de direcciones'
+        + (mailActivo() ? '.' : ' o recibir los avisos por mail.') + '</p>' + htmlMailRecuadro(true);
     }
     if (est === 'ios') {
       return '<p class="fc-av-linea fc-av-sub"><i class="fa-solid fa-mobile-screen"></i> '
-        + 'En iPhone y iPad todav\u00eda no podemos avisarte. Sincroniz\u00e1 tu lista y activ\u00e1 los avisos desde la compu o un Android.</p>';
+        + 'En iPhone y iPad el navegador todav\u00eda no nos deja mandarte notificaciones'
+        + (mailActivo() ? '.' : ', pero te avisamos por mail: una semana antes y en los \u00faltimos d\u00edas de cada favorito, y cuando salgan tus resultados.') + '</p>'
+        + htmlMailRecuadro(true);
     }
-    if (est === 'nosoporta') return '';
+    if (est === 'nosoporta') {
+      return '<p class="fc-av-linea fc-av-sub"><i class="fa-solid fa-envelope"></i> '
+        + 'Este navegador no muestra notificaciones' + (mailActivo() ? '.' : ', pero te avisamos por mail antes de que cierren tus favoritos y cuando salgan tus resultados.') + '</p>'
+        + htmlMailRecuadro(true);
+    }
     if (avisoPend && !vinculado()) {
       return '<div class="fc-av-cta"><i class="fa-solid fa-bell fc-av-ico"></i><div>'
         + '<p class="fc-av-tit"><strong>\u00daltimo paso: eleg\u00ed c\u00f3mo guardar tu lista</strong></p>'
@@ -218,7 +227,131 @@ try {
       + '<p class="fc-av-sub">Te avisamos una semana antes y en los \u00faltimos d\u00edas de cada favorito.'
       + (vinculado() ? '' : ' Para eso tu lista se sincroniza: con tu cuenta de Google o con un c\u00f3digo, sin cuenta.') + '</p>'
       + '<button type="button" class="btn-borrar btn-verde" data-fcs="avisar"><i class="fa-solid fa-bell"></i> Avisarme antes del cierre</button>'
-      + '</div></div>';
+      + (vinculado() && !mailActivo() && !mailPend() && !verMail ? ' <a href="#" class="fc-av-mini" data-fcs="vermail">\u00bfPrefer\u00eds por mail?</a>' : '')
+      + '</div></div>'
+      + (vinculado() && (mailActivo() || mailPend() || verMail) ? htmlMailRecuadro() : '');
+  }
+
+  // ---------- Avisos por mail (para quien no puede o no quiere notificaciones del navegador) ----------
+  // Google: mailg/<uid> = {ok, t}; el pipeline toma el correo de Firebase Auth. C\u00f3digo: mailk/<c\u00f3digo> = {m, t};
+  // vale cuando el usuario confirma desde el mail que manda el Worker (/__mailconf) y el Worker anota la firma (c).
+  // El pipeline (ConcursosNotificarFavoritos.py) manda por mail los avisos a quien no recibe el push.
+  var K_MAIL = 'fc_mail';   // copia local: 'g' (Google, activo) | 'k:p:<correo>' (sin confirmar) | 'k:ok:<correo>'
+  var MAIL_OK = /^[^@\s]+@[^@\s]+\.[^@\s]+$/;
+  var verMail = false;      // toc\u00f3 "\u00bfPrefer\u00eds por mail?" en el recuadro
+  function mailLocal() { return ls(K_MAIL) || ''; }
+  function mailActivo() { var v = mailLocal(); return v === 'g' || v.indexOf('k:ok:') === 0; }
+  function mailPend() { var v = mailLocal(); return v.indexOf('k:p:') === 0 ? v.slice(4) : ''; }
+  function mailDe() { var v = mailLocal(); return v === 'g' ? ((auth() || {}).email || '') : v.replace(/^k:(ok|p):/, ''); }
+  var CSS_MAIL = '.fc-mail-form{display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin:8px 0 4px}'
+    + '.fc-mail-form input{flex:1 1 200px;min-width:0;box-sizing:border-box;padding:10px 16px;border-radius:30px;border:2px solid #ddd;font:inherit;font-size:15px;outline:none;text-transform:none;background:#fff;color:#1a1a1a}'
+    + '.fc-mail-form input:focus{border-color:#2e8b57}'
+    + '#fc-inv .fc-mail-form .fc-inv-btn{flex:1 1 100%}'
+    + 'body.dark-mode .fc-mail-form input{background:#2a2a2a;color:#eee;border-color:#444}';
+  function cssMail() {
+    if (document.getElementById('fc-mail-css')) return;
+    var st = document.createElement('style'); st.id = 'fc-mail-css'; st.textContent = CSS_MAIL; document.head.appendChild(st);
+  }
+  // Bot\u00f3n (Google) o campo de correo (c\u00f3digo). attr: 'fcs' (recuadro) o 'inv' (tarjeta)
+  function formMail(attr) {
+    cssMail();
+    var clase = attr === 'inv' ? 'fc-inv-btn' : 'btn-borrar btn-verde';
+    if (auth()) {
+      return '<button type="button" class="' + clase + '" data-' + attr + '="mail"><i class="fa-solid fa-envelope"></i> Avisarme a '
+        + esc((auth() || {}).email || 'mi correo') + '</button>';
+    }
+    return '<form class="fc-mail-form" novalidate><input type="email" autocomplete="email" inputmode="email" placeholder="Tu correo" aria-label="Tu correo"'
+      + (mailDe() ? ' value="' + esc(mailDe()) + '"' : '') + '>'
+      + '<button type="submit" class="' + clase + '"><i class="fa-solid fa-envelope"></i> Avisarme por mail</button></form>';
+  }
+  function htmlMailRecuadro(sinPush) {
+    if (!vinculado()) return sinPush ? '<p class="fc-av-sub">Para eso, guard\u00e1 tu lista en la nube (ac\u00e1 abajo).</p>' : '';
+    if (mailActivo()) {
+      return '<p class="fc-av-linea"><i class="fa-solid fa-envelope fc-av-ok"></i> <strong>Avisos por mail</strong>'
+        + ' <span class="fc-av-sub">\u00b7 a ' + esc(mailDe()) + '</span> <a href="#" class="fc-av-mini" data-fcs="nomail">Dejar de recibirlos</a></p>';
+    }
+    if (mailPend()) {
+      return '<p class="fc-av-linea fc-av-sub"><i class="fa-solid fa-envelope"></i> Te mandamos un mail a <strong>' + esc(mailPend())
+        + '</strong> para confirmar (si no lo ves, revis\u00e1 el spam). <a href="#" class="fc-av-mini" data-fcs="mailreenv">Reenviar</a>'
+        + ' <a href="#" class="fc-av-mini" data-fcs="nomail">Cancelar</a></p>';
+    }
+    return formMail('fcs');
+  }
+  async function urlMail() {
+    var a = auth();
+    if (a) { var tk = await token(); return tk ? DB + '/mailg/' + a.uid + '.json?auth=' + encodeURIComponent(tk) : null; }
+    var c = codigo();
+    return c ? DB + '/mailk/' + c + '.json' : null;
+  }
+  // Estado real en la nube (otro dispositivo pudo activarlo, confirmarlo o desactivarlo)
+  async function refrescarMail() {
+    if (!vinculado()) { if (mailLocal()) lsDel(K_MAIL); return; }
+    try {
+      var id0 = identidad(), url = await urlMail(); if (!url) return;
+      var r = await fetch(url); if (!r.ok || !sigueIgual(id0)) return;
+      var j = await r.json(), antes = mailLocal(), v = '';
+      if (auth()) v = (j && j.ok === true) ? 'g' : '';
+      else if (j && j.m) v = (j.c ? 'k:ok:' : 'k:p:') + String(j.m).toLowerCase();
+      if (v) lsSet(K_MAIL, v); else lsDel(K_MAIL);
+      if (v !== antes) pintar();
+    } catch (e) {}
+  }
+  async function activarMail(correo) {
+    var a = auth();
+    try {
+      var url = await urlMail(); if (!url) throw new Error('sin destino');
+      if (a) {
+        var r = await fetch(url, { method: 'PUT', body: JSON.stringify({ ok: true, t: { '.sv': 'timestamp' } }) });
+        if (!r.ok) throw new Error('mailg');
+        lsSet(K_MAIL, 'g');
+        medir('mail_activado', { via: 'google' });
+        toast('Listo: te vamos a avisar por mail' + (a.email ? ' a ' + a.email : ''));
+      } else {
+        correo = String(correo || '').trim().toLowerCase();
+        if (!MAIL_OK.test(correo) || correo.length > 120) { toast('Revis\u00e1 el correo: no parece v\u00e1lido.', 'warning'); return false; }
+        var r2 = await fetch(url, { method: 'PATCH', body: JSON.stringify({ m: correo, t: { '.sv': 'timestamp' } }) });
+        if (!r2.ok) throw new Error('mailk');
+        lsSet(K_MAIL, 'k:p:' + correo);
+        medir('mail_activado', { via: 'codigo' });
+        if (await pedirConfirmacion()) toast('Te mandamos un mail a ' + correo + '. Confirmalo para empezar a recibir los avisos.');
+        refrescarMail();   // si ese correo ya estaba confirmado, queda activo
+      }
+      pintar();
+      return true;
+    } catch (e) {
+      toast('No se pudo activar el aviso por mail. Prob\u00e1 de nuevo en un rato.', 'warning');
+      return false;
+    }
+  }
+  async function pedirConfirmacion(manual) {
+    var c = codigo(); if (!c) return false;
+    var aviso = 'No pudimos mandar el mail de confirmaci\u00f3n. Prob\u00e1 con "Reenviar" en Mis favoritos.';
+    try {
+      var r = await fetch('/__mailconf', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ k: c }) });
+      if (r.ok) {
+        var j = await r.json().catch(function () { return {}; });
+        if (j && j.ya) { refrescarMail(); return false; }
+        if (manual) toast('Te reenviamos el mail de confirmaci\u00f3n.');
+        return true;
+      }
+      if (r.status === 429) aviso = manual ? 'Ya te mandamos el mail hace un rato. Revis\u00e1 tambi\u00e9n la carpeta de spam.'
+        : 'Guardamos tu correo. Si en un rato no te lleg\u00f3 el mail de confirmaci\u00f3n, toc\u00e1 "Reenviar" en Mis favoritos.';
+    } catch (e) {}
+    toast(aviso, 'warning');
+    return false;
+  }
+  async function desactivarMail() {
+    try {
+      var g = !!auth(), url = await urlMail(); if (!url) throw new Error('sin destino');
+      var r = await fetch(url, g ? { method: 'PUT', body: JSON.stringify({ ok: false, t: { '.sv': 'timestamp' } }) } : { method: 'DELETE' });
+      if (!r.ok) throw new Error('mail');
+      lsDel(K_MAIL);
+      medir('mail_desactivado', {});
+      toast('Listo: no te vamos a mandar avisos por mail.');
+      pintar();
+    } catch (e) {
+      toast('No se pudo desactivar. Prob\u00e1 de nuevo en un rato.', 'warning');
+    }
   }
   // El permiso se pide dentro del clic (si no, el navegador bloquea el cartel). Con el SDK ya cargado lo
   // pide OneSignal; si Zaraz todavía no lo cargó, lo pide el navegador y OneSignal suscribe al llegar.
@@ -447,7 +580,7 @@ try {
   function empezarDeCero() { lsDel(K_SNAP); lsDel(K_PEND); }
 
   function desvincular(silencioso) {
-    lsDel(K_AUTH); lsDel(K_COD); lsDel(K_SNAP); lsDel(K_PEND); lsDel(K_PREFC);
+    lsDel(K_AUTH); lsDel(K_COD); lsDel(K_SNAP); lsDel(K_PEND); lsDel(K_PREFC); lsDel(K_MAIL);
     try { sessionStorage.removeItem('fc_inv_ses'); } catch (e) {}   // si vuelve a guardar algo, se le ofrece de nuevo
     osDesvincular();
     if (!silencioso) toast('Este dispositivo dejó de sincronizar. Tus concursos siguen guardados acá.');
@@ -462,6 +595,7 @@ try {
       if (!url) throw new Error('sin destino');
       var r = await fetch(url, { method: 'DELETE' });
       if (!r.ok) throw new Error('borrado');
+      try { var um = await urlMail(); if (um) await fetch(um, { method: 'DELETE' }); } catch (e) {}   // y el pedido de avisos por mail
       desvincular(true);
       toast('Listo: borramos tu lista de la nube. Tus concursos siguen en este dispositivo.');
     } catch (e) {
@@ -521,7 +655,12 @@ try {
   function avisarVinculado(pidioAvisos) {
     if (pidioAvisos) { osVincularCon({ pref_concursos: '1' }); medir('avisos_activados', {}); cerrarInvitacion(); }   // venía de "Avisarme" (permiso ya concedido en el clic)
     else if (puedePedirAvisos()) mostrarPreferencias('pedir');
-    else { cerrarInvitacion(); if (avisosConcedidos()) revisarPrefs(); }
+    else if (avisosConcedidos()) { cerrarInvitacion(); revisarPrefs(); }
+    else if (!document.documentElement.classList.contains('fc-mazo')) {
+      // Sin notificaciones posibles (iPhone sin la web instalada, bloqueadas, sin soporte): ofrecer el mail
+      var c0 = document.getElementById('fc-inv'), part0 = !!(c0 && c0.getAttribute('data-motivo') === 'participe');
+      refrescarMail().then(function () { if (mailActivo() || mailPend()) cerrarInvitacion(); else mostrarMail(part0); });
+    } else cerrarInvitacion();
     try { window.dispatchEvent(new CustomEvent('fc-sync-vinculado')); } catch (e) {}
   }
   function avisosConcedidos() {
@@ -617,6 +756,7 @@ try {
         else if (acc === 'avisarsync') avisarYGuardar();
         else if (acc === 'sologuardar') { avisoPend = false; mostrarGuardar(c.getAttribute('data-motivo') === 'participe'); }
         else if (acc === 'avisocod') { avisoPend = false; vincularCodigo(nuevoCodigo(), 'aviso'); }
+        else if (acc === 'mail') { activarMail().then(function (ok) { if (ok) cerrarInvitacion(); }); }
       });
       document.body.appendChild(c);
     }
@@ -702,11 +842,13 @@ try {
     if (document.documentElement.classList.contains('fc-mazo')) return;   // Flechazo tiene su propia invitación
     var part = +estadoNuevo === 2;
     if (vinculado()) {
-      if (!puedePedirAvisos()) return;
+      var sinPush = !puedePedirAvisos() && !avisosConcedidos();   // iPhone sin la web instalada, bloqueadas o sin soporte
+      if (!puedePedirAvisos() && !(sinPush && !mailActivo() && !mailPend())) return;
       var ult = parseInt(ls(K_AVREP) || '0', 10) || 0;
       if (Date.now() - ult < AVREP_MS) return;
       marcarSesion(K_INV);
       lsSet(K_AVREP, String(Date.now()));
+      if (sinPush) { mostrarMail(part); return; }
       mostrarPreferencias('pedir', null, tituloAviso(part));
       document.getElementById('fc-inv').setAttribute('data-tipo', 'avisos');
       medir('sync_tarjeta', { tipo: 'avisos', motivo: part ? 'participe' : 'favorito' });
@@ -733,7 +875,8 @@ try {
     var texto = concedido
       ? 'Ya tenés las notificaciones activadas: guardá tu lista en la nube y te avisamos. Además, la tenés en todos tus dispositivos.'
       : 'Por ahora ' + (part ? 'está' : 'están') + ' solo en este navegador: si lo borrás o cambiás de celu, se pierde' + (part ? '' : 'n') + '. Con Google ' + (part ? 'lo' : 'los') + ' tenés en todos tus dispositivos.'
-        + (esIOSsinApp() ? ' En iPhone, Safari puede borrar los datos de un sitio si no entrás por una semana.' : '');
+        + (esIOSsinApp() ? ' En iPhone, Safari puede borrar los datos de un sitio si no entrás por una semana.' : '')
+        + (!puedePedirAvisos() ? ' Y así también te podemos avisar por mail.' : '');
     c = tarjeta(X_CERRAR
       + cabecera(ICO_NUBE, concedido ? tituloAviso(part) : (part ? 'No pierdas tu historial de participaciones' : 'Guardá tus concursos en la nube'), texto)
       + '<div class="fc-inv-g" id="fc-inv-g"></div>'
@@ -742,6 +885,18 @@ try {
     c.setAttribute('data-motivo', part ? 'participe' : 'favorito');
     montarBotonGoogle(document.getElementById('fc-inv-g'));
     if (!cambio) medir('sync_tarjeta', { tipo: 'guardar', motivo: part ? 'participe' : 'favorito' });
+  }
+  var ICO_SOBRE = '<svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="m3 7 9 6 9-6"/></svg>';
+  // Tarjeta de avisos por mail: para quien ya sincroniza y no puede recibir notificaciones en este navegador
+  function mostrarMail(part) {
+    var c = tarjeta(X_CERRAR
+      + cabecera(ICO_SOBRE, part ? '\u00bfTe avisamos por mail cuando salga el resultado?' : '\u00bfTe avisamos por mail antes de que cierre?',
+        'En este navegador no podemos mandarte notificaciones, pero te mandamos los mismos avisos por mail: antes del cierre de tus favoritos y cuando salgan tus resultados.'
+        + (auth() ? '' : ' Te vamos a pedir que confirmes el correo.'))
+      + '<div class="fc-inv-ops">' + formMail('inv') + '</div>'
+      + '<div class="fc-inv-pie fc-inv-pie-der"><button type="button" data-inv="cerrar">Ahora no</button></div>', 'mail');
+    c.setAttribute('data-motivo', part ? 'participe' : 'favorito');
+    medir('sync_tarjeta', { tipo: 'mail', motivo: part ? 'participe' : 'favorito' });
   }
   // "Avisarme" de la tarjeta: el permiso se pide en el clic; con el sí, falta elegir dónde guardar la lista.
   async function avisarYGuardar() {
@@ -861,6 +1016,10 @@ try {
     if (acc === 'concursos') { medir('avisos_activados', {}); osVincularCon({ pref_concursos: '1' }); lsSet(K_PREFC, '1'); toast('Listo: te vamos a avisar antes de que cierren tus favoritos'); pintar(); return; }
     if (acc === 'avisocod') { avisoPend = false; vincularCodigo(nuevoCodigo(), 'aviso'); return; }
     if (acc === 'avisocancel') { avisoPend = false; pintar(); return; }
+    if (acc === 'vermail') { verMail = true; pintar(); return; }
+    if (acc === 'mail') { activarMail(); return; }
+    if (acc === 'nomail') { desactivarMail(); return; }
+    if (acc === 'mailreenv') { pedirConfirmacion(true); return; }
     if (acc === 'ahora') sincronizar(true);
     else if (acc === 'salir') desvincular();
     else if (acc === 'crear') vincularCodigo(nuevoCodigo(), true);
@@ -869,6 +1028,16 @@ try {
 
   document.addEventListener('submit', function (ev) {
     var f = ev.target;
+    if (f.classList && f.classList.contains('fc-mail-form')) {
+      ev.preventDefault();
+      var enTarjeta = !!(f.closest && f.closest('#fc-inv'));
+      var btn = f.querySelector('button'); if (btn) btn.disabled = true;
+      activarMail(f.querySelector('input').value).then(function (ok) {
+        if (btn) btn.disabled = false;
+        if (ok && enTarjeta) cerrarInvitacion();
+      });
+      return;
+    }
     if (!f.classList || !f.classList.contains('fc-sync-form')) return;
     ev.preventDefault();
     var input = f.querySelector('input');
@@ -893,7 +1062,7 @@ try {
       else if (c && c !== codigo()) { vincularCodigo(c, false); return; }
     }
     pintar();
-    if (vinculado()) { sincronizar(); osVincular(); }
+    if (vinculado()) { sincronizar(); osVincular(); refrescarMail(); }
     else oneTap();
     medirEstado();
   }
@@ -912,6 +1081,7 @@ try {
       medir('sync_estado', {
         sync: auth() ? 'google' : (codigo() ? 'codigo' : 'no'),
         favoritos: tramo(f), participados: tramo(p),
+        mail: mailActivo() ? 'activo' : (mailPend() ? 'pendiente' : 'no'),
         avisos: est !== 'inactivo' ? est : !vinculado() ? 'sin_sync' : (Notification.permission === 'granted' ? 'apagados' : 'sin_pedir'),
         origen: origen()
       });
