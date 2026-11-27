@@ -240,6 +240,8 @@ try {
   // ---------- Perfiles ----------
   // relajado: visitante con anuncios (ya paga con anuncios, viñetas y Offerwall).
   // agresivo: visitante con bloqueador (no genera ingresos de AdSense).
+  //   2026-11-27: suavizado (antes 60/120 s, salida desde 30 s, 2 por sesion, cooldown a la mitad):
+  //   ya tiene encima la barra roja del anchor y el mensaje de recuperacion de Google.
   // umbral = segundos VISIBLES acumulados en la sesion.
   // exitDesde = segundos desde los que la salida del cursor puede disparar el popup
   //             (null = no adelanta nada: exige el mismo umbral que el temporizador).
@@ -253,11 +255,11 @@ try {
       factorCooldown: 1
     },
     agresivo: {
-      umbral: { cafe: 60, antemeridiano: 120 },
-      exitDesde: 30,
-      maxPorSesion: 2,
-      separacion: 120,
-      factorCooldown: 0.5
+      umbral: { cafe: 120, antemeridiano: 240 },
+      exitDesde: 60,
+      maxPorSesion: 1,
+      separacion: 0,
+      factorCooldown: 1
     }
   };
 
@@ -286,6 +288,19 @@ try {
 
   var T0 = Date.now();
   var tiempo = 0; // segundos visibles acumulados en la sesion
+
+  // 2026-11-27: si en esta pagina aparecio el mensaje de recuperacion de bloqueo de Google
+  // (Funding Choices), no se muestra ningun popup en ella: queda para la pagina siguiente
+  // (sin gastar cooldown ni contar como pospuesto).
+  var recuperacionEnPagina = false;
+  function vioRecuperacion() {
+    if (recuperacionEnPagina) return true;
+    var nodos = document.querySelectorAll('.fc-ab-root');
+    for (var i = 0; i < nodos.length; i++) {
+      if (esVisible(nodos[i])) { recuperacionEnPagina = true; break; }
+    }
+    return recuperacionEnPagina;
+  }
 
   // ---------- Storage seguro ----------
   function lsGet(k) { try { return localStorage.getItem(k); } catch (e) { return null; } }
@@ -723,6 +738,7 @@ try {
       intentando = true;
       intento = 0;
     }
+    if (vioRecuperacion()) { intentando = false; return; }
     var perfil = perfilActual();
     // Reconfirma con el perfil vigente (puede haber cambiado a "agresivo" mientras esperaba)
     if (nSesion() >= perfil.maxPorSesion || !elegible(tipo, Date.now())) { intentando = false; return; }
@@ -752,6 +768,7 @@ try {
   function evaluar(disparo) {
     if (intentando) return;
     if (disparo === 'exit_intent') desistido = false; else if (desistido) return;
+    if (vioRecuperacion()) return;
     var perfil = perfilActual();
     if (nSesion() >= perfil.maxPorSesion) return;
     var ahora = Date.now();
