@@ -108,7 +108,7 @@ function fxFav(el) {
 
   if (estado === 0) mostrarToast('Concurso desmarcado','warning');
   if (estado === 1) mostrarToast('Concurso guardado en favoritos, presione nuevamente si ya participó','success','/p/mis-concursos-favoritos.html#lista-favoritos');
-  if (estado === 2) mostrarToast('Concurso guardado en "ya participé", presione nuevamente para desmarcar','success','/p/mis-concursos-favoritos.html#lista-participados');
+  if (estado === 2) mostrarToast(typeof fcToastParticipe === 'function' ? fcToastParticipe() : 'Concurso guardado en "ya participé"','success','/p/mis-concursos-favoritos.html#lista-participados');
 
   idle(actualizarCookie, 500);
 }

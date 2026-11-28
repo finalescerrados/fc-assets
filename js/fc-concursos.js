@@ -184,14 +184,14 @@ try {
     var est = estadoRecuadro();
     if (est === 'activo') {
       return '<p class="fc-av-linea"><i class="fa-solid fa-bell fc-av-ok"></i> <strong>Avisos activados</strong>'
-        + ' <span class="fc-av-sub">\u00b7 una semana antes y en los \u00faltimos d\u00edas de cada favorito</span>'
+        + ' <span class="fc-av-sub">\u00b7 antes del cierre de tus favoritos y cuando salgan tus resultados</span>'
         + ' <a href="#" class="fc-av-mini" data-fcs="noavisar">Dejar de avisarme</a></p>'
         + (mailActivo() || mailPend() ? htmlMailRecuadro() : '');
     }
     if (est === 'sinconcursos') {
       return '<div class="fc-av-cta"><i class="fa-solid fa-bell fc-av-ico"></i><div>'
         + '<p class="fc-av-tit"><strong>Tus avisos est\u00e1n activados solo para el blog</strong></p>'
-        + '<p class="fc-av-sub">Activ\u00e1 tambi\u00e9n los de concursos y te avisamos una semana antes y en los \u00faltimos d\u00edas de cada favorito.</p>'
+        + '<p class="fc-av-sub">Activ\u00e1 tambi\u00e9n los de concursos y te avisamos antes del cierre de tus favoritos y cuando salgan tus resultados.</p>'
         + '<button type="button" class="btn-borrar btn-verde" data-fcs="concursos"><i class="fa-solid fa-bell"></i> Avisarme de concursos</button>'
         + '</div></div>';
     }
@@ -224,7 +224,7 @@ try {
     }
     return '<div class="fc-av-cta"><i class="fa-solid fa-bell fc-av-ico"></i><div>'
       + '<p class="fc-av-tit"><strong>Que no se te pase ning\u00fan cierre</strong></p>'
-      + '<p class="fc-av-sub">Te avisamos una semana antes y en los \u00faltimos d\u00edas de cada favorito.'
+      + '<p class="fc-av-sub">Te avisamos una semana antes y en los \u00faltimos d\u00edas de cada favorito, y cuando salgan tus resultados.'
       + (vinculado() ? '' : ' Para eso tu lista se sincroniza: con tu cuenta de Google o con un c\u00f3digo, sin cuenta.') + '</p>'
       + '<button type="button" class="btn-borrar btn-verde" data-fcs="avisar"><i class="fa-solid fa-bell"></i> Avisarme antes del cierre</button>'
       + (vinculado() && !mailActivo() && !mailPend() && !verMail ? ' <a href="#" class="fc-av-mini" data-fcs="vermail">\u00bfPrefer\u00eds por mail?</a>' : '')
@@ -391,13 +391,13 @@ try {
     if (!vinculado()) { avisoPend = true; pintar(); return; }   // sin lista en la nube no hay a quién avisar: que elija Google o código
     osVincularCon({ pref_concursos: '1' });
     medir('avisos_activados', {});
-    toast('Listo: te vamos a avisar antes de que cierren tus favoritos');
+    toast('Listo: te vamos a avisar antes de que cierren tus favoritos y cuando salgan tus resultados');
     pintar();
   }
   function desactivarAvisos() {
     lsSet(K_OS_OFF, '1');
     osDesvincular();
-    toast('Listo: no te vamos a avisar de tus favoritos');
+    toast('Listo: no te vamos a avisar de tus favoritos ni de tus resultados');
     pintar();
   }
   function formatear(c) { return c.replace(/(.{4})(?=.)/g, '$1-'); }
@@ -813,7 +813,7 @@ try {
     return tags;
   }
   function avisoListo(tags) {
-    toast('Listo: te vamos a avisar antes de que cierren tus favoritos' + (tags.pref_blog === '1' ? ' y cuando haya artículos nuevos' : ''));
+    toast('Listo: te vamos a avisar antes de que cierren tus favoritos y cuando salgan tus resultados' + (tags.pref_blog === '1' ? ' y cuando haya artículos nuevos' : ''));
   }
   function guardarDesdeTarjeta() {
     var c = document.getElementById('fc-inv'); if (!c) return;
@@ -947,7 +947,7 @@ try {
       lsDel(K_COD);
       empezarDeCero();
       var pidio = avisoPend;
-      toast(pidio ? 'Listo: sincronizado con tu cuenta de Google. Te vamos a avisar antes de que cierren tus favoritos'
+      toast(pidio ? 'Listo: sincronizado con tu cuenta de Google. Te vamos a avisar antes de que cierren tus favoritos y cuando salgan tus resultados'
         : 'Listo: este dispositivo quedó sincronizado con tu cuenta de Google');
       avisoPend = false;
       try { sessionStorage.removeItem(K_OS); } catch (e) {}
@@ -968,7 +968,7 @@ try {
     lsDel(K_AUTH);
     lsSet(K_COD, c);
     empezarDeCero();
-    toast(creado === 'aviso' ? 'Listo: tu lista quedó sincronizada con un código. Te vamos a avisar antes de que cierren tus favoritos'
+    toast(creado === 'aviso' ? 'Listo: tu lista quedó sincronizada con un código. Te vamos a avisar antes de que cierren tus favoritos y cuando salgan tus resultados'
       : (creado ? 'Código creado: usalo en tus otros dispositivos' : 'Listo: este dispositivo quedó vinculado'));
     try { sessionStorage.removeItem(K_OS); } catch (e) {}
     medir('sync_vinculado', { via: creado ? 'codigo_nuevo' : 'codigo', con_avisos: creado === 'aviso' ? '1' : '0' });
@@ -987,6 +987,7 @@ try {
   // ---------- Recuadro de la página de favoritos: <div id="fc-sync-box"></div> ----------
   function pintar() {
     var box = document.getElementById('fc-sync-box'); if (!box) return;
+    setTimeout(function () { try { window.dispatchEvent(new CustomEvent('fc-avisos-pintado')); } catch (e) {} }, 0);
     var a = auth(), c = codigo(), av = htmlAvisos(), sync;
     if (a) {
       sync =
@@ -1023,7 +1024,7 @@ try {
     if (acc === 'borrar') { borrarNube(); return; }
     if (acc === 'avisar') { activarAvisos(); return; }
     if (acc === 'noavisar') { desactivarAvisos(); return; }
-    if (acc === 'concursos') { medir('avisos_activados', {}); osVincularCon({ pref_concursos: '1' }); lsSet(K_PREFC, '1'); toast('Listo: te vamos a avisar antes de que cierren tus favoritos'); pintar(); return; }
+    if (acc === 'concursos') { medir('avisos_activados', {}); osVincularCon({ pref_concursos: '1' }); lsSet(K_PREFC, '1'); toast('Listo: te vamos a avisar antes de que cierren tus favoritos y cuando salgan tus resultados'); pintar(); return; }
     if (acc === 'avisocod') { avisoPend = false; vincularCodigo(nuevoCodigo(), 'aviso'); return; }
     if (acc === 'avisocancel') { avisoPend = false; pintar(); return; }
     if (acc === 'vermail') { verMail = true; pintar(); return; }
@@ -1111,7 +1112,9 @@ try {
   window.fcSync = {
     sincronizar: function () { return sincronizar(true); }, desvincular: desvincular,
     vinculado: vinculado, invitar: invitar, botonGoogle: montarBotonGoogle,
-    estadoAvisos: estadoAvisos, ofrecerAvisos: ofrecerAvisos
+    estadoAvisos: estadoAvisos, ofrecerAvisos: ofrecerAvisos,
+    // true si a este usuario le va a llegar el aviso de resultados (push con concursos activo, o mail confirmado)
+    avisaResultados: function () { return vinculado() && ((avisosConcedidos() && ls(K_PREFC) !== '0') || mailActivo()); }
   };
 })();
 } catch (e) { console.error('[fc-concursos.js bloque 1]', e); }

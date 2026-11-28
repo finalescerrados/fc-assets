@@ -498,6 +498,27 @@ function fcNormTitulo(t) {
   return String(t || '').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/[^a-z0-9]+/g, ' ').trim();
 }
 
+// Aviso de resultados en "ya particip\u00e9": se recuerda el estado con que se pint\u00f3 la lista y, si el recuadro
+// de sincronizaci\u00f3n se repinta con otro (activ\u00f3 o desactiv\u00f3 los avisos), se vuelve a pintar
+var fcAvisaRes = null;
+function fcAvisaResultados() {
+  try { return !!(window.fcSync && window.fcSync.avisaResultados && window.fcSync.avisaResultados()); } catch (e) { return false; }
+}
+window.addEventListener('fc-avisos-pintado', function () {
+  if (fcAvisaRes !== null && fcAvisaResultados() !== fcAvisaRes) renderLists();
+});
+// Clic en "Activ\u00e1 los avisos": pide el permiso o abre las preferencias si se puede; si no, lleva al recuadro
+function fcPedirAvisosRes(ev) {
+  if (ev) ev.preventDefault();
+  fcMedir('fav_res_avisos_click', {});
+  var e = '';
+  try { e = window.fcSync && window.fcSync.ofrecerAvisos ? window.fcSync.ofrecerAvisos() : ''; } catch (x) {}
+  if (e !== 'pedir' && e !== 'guardar') {
+    var box = document.getElementById('fc-sync-box');
+    if (box) box.scrollIntoView({ behavior: 'smooth', block: 'center' });
+  }
+  return false;
+}
 // HTML del bloque de resultado de un concurso en "ya particip\u00e9"
 function fcResHTML(id, res, otrosConMismoTexto) {
   var ops = [['', 'Esperando']].concat(Object.keys(FC_RES).map(function (k) { return [k, FC_RES[k]]; }));
@@ -516,6 +537,9 @@ function fcResHTML(id, res, otrosConMismoTexto) {
     else if (!res.r) info.push('<span class="fav-res-fallo pronto">El fallo era el ' + cuando + ': \u00bfya sali\u00f3 el resultado?</span>');
     else info.push('<span class="fav-res-fallo">Fallo: ' + cuando + '</span>');
   }
+  if (!res.r) info.push(fcAvisaRes
+    ? '<span class="fav-res-aviso"><i class="fa-solid fa-bell" aria-hidden="true"></i> Te avisamos cuando se publique el resultado</span>'
+    : '<a href="#fc-sync-box" class="fav-res-aviso fav-res-aviso-off" onclick="return fcPedirAvisosRes(event)"><i class="fa-solid fa-bell" aria-hidden="true"></i> Activ\u00e1 los avisos y te contamos el resultado</a>');
   if (otrosConMismoTexto.length) {
     info.push('<span class="fav-res-dup">Este texto tambi\u00e9n est\u00e1 esperando resultado en: ' + otrosConMismoTexto.map(fcEsc).join(', ')
       + '. Revis\u00e1 si alguno pide exclusividad.</span>');
@@ -612,7 +636,7 @@ function togglePart(el) {
   var veniaDeFavoritos = !!(fila && fila.parentNode && fila.parentNode.id === 'lista-favoritos');
 
   if(typeof mostrarToast === 'function') 
-    mostrarToast(estado === 2 ? 'Guardado en "ya participé"' : 'Desmarcado','success');
+    mostrarToast(estado === 2 ? (typeof fcToastParticipe === 'function' ? fcToastParticipe() : 'Guardado en "ya participé"') : 'Desmarcado','success');
 
   localStorage.setItem('fav_' + id, estado);
   if (typeof fcMeGusta === 'function') fcMeGusta(id, antes, estado);   // contador de "me gusta" (tema)
@@ -654,6 +678,7 @@ function procesarEntradaUnica(json) {
 }
 
 function renderLists() {
+  fcAvisaRes = fcAvisaResultados();
   var totalFav=0, totalHoy=0, totalSemana=0, totalPart=0;
   var favHTML = '', partHTML = '';
 

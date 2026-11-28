@@ -1210,6 +1210,12 @@ function toggleFavIndividual(pageId) {
   idle(actualizarCookie, 500);
 }
 
+// Toast al marcar "ya participé": cuenta que avisamos el resultado (o lo ofrece si no tiene avisos)
+function fcToastParticipe() {
+  var avisa = false;
+  try { avisa = !!(window.fcSync && window.fcSync.avisaResultados && window.fcSync.avisaResultados()); } catch (e) {}
+  return avisa ? 'Guardado en \"ya participé\". Te avisamos cuando salga el resultado \ud83d\udd14' : 'Guardado en \"ya participé\". ¿Querés que te avisemos del resultado?';
+}
 // Toggle participado en página individual
 function togglePartIndividual(pageId) {
   var antes = getEstado(pageId);
@@ -1220,7 +1226,7 @@ function togglePartIndividual(pageId) {
   var estado = getEstado(pageId) === 2 ? 0 : 2;
 
   if(typeof mostrarToast === 'function') {
-    mostrarToast(estado === 2 ? 'Guardado en "ya participé"' : 'Desmarcado','success',
+    mostrarToast(estado === 2 ? fcToastParticipe() : 'Desmarcado','success',
       estado === 2 ? '/p/mis-concursos-favoritos.html#lista-participados' : null);
   }
 
